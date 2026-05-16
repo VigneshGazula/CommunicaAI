@@ -19,5 +19,6 @@ namespace CommunicaAI.Models
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
+        public UserMediaProfile? MediaProfile { get; set; }
     }
 }
