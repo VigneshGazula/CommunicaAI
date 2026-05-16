@@ -2,6 +2,7 @@
 using CommunicaAI.DTO.Auth;
 using CommunicaAI.Models;
 using CommunicaAI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,7 @@ public class AuthController : ControllerBase
         var email = request.Email.Trim().ToLower();
         var existingUser = await _context.AppUsers.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
 
-        if(existingUser==null)
+        if(existingUser!=null)
         {
             return Conflict(new { message = "Email already Registered" });
         }
@@ -86,6 +87,17 @@ public class AuthController : ControllerBase
 
         return Ok(response);
 
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        return Ok(new
+        {
+            Message = "Authenticated",
+            User = User.Identity?.Name
+        });
     }
 
 }
