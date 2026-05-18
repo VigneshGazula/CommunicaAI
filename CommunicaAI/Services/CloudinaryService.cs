@@ -68,7 +68,7 @@ public class CloudinaryService : ICloudinaryService
         };
     }
 
-    public async Task DeleteAsync(string publicId, string resourceType)
+    public async Task DeleteAsync(string publicId, ResourceType resourceType)
     {
         if (string.IsNullOrWhiteSpace(publicId))
             return;

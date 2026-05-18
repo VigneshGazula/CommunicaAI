@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
         var email = request.Email.Trim().ToLower();
-        var existingUser = await _context.AppUsers.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+        var existingUser = await _context.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
 
         if(existingUser!=null)
         {
@@ -63,7 +63,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var email = request.Email.Trim().ToLower();
-        AppUser user = await _context.AppUsers.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+        AppUser user = await _context.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
         if (user == null)
         {
             return Unauthorized(new { message = "Invalid email or password." });

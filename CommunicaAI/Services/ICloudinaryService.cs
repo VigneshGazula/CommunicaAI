@@ -1,4 +1,7 @@
-﻿using CommunicaAI.Models;
+﻿using CloudinaryDotNet.Actions;
+using CommunicaAI.Models;
+using System.Security.AccessControl;
+using ResourceType = CloudinaryDotNet.Actions.ResourceType;
 
 namespace CommunicaAI.Services
 {
@@ -6,6 +9,6 @@ namespace CommunicaAI.Services
     {
         Task<MediaUploadResult> UploadAudioAsync(IFormFile file, Guid userId);
         Task<MediaUploadResult> UploadVideoAsync(IFormFile file, Guid userId);
-        Task DeleteAsync(string publicId, string resourceType);
+        Task DeleteAsync(string publicId, ResourceType resourceType);
     }
 }

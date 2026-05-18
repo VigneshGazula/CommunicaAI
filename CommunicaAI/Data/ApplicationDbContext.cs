@@ -13,6 +13,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserMediaProfile> UserMediaProfiles => Set<UserMediaProfile>();
 
+    public object AppUser { get; internal set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
