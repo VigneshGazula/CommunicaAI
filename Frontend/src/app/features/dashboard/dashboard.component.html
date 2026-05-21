@@ -1,0 +1,73 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <span class="brand">Communica<span>AI</span></span>
+    <div class="header-right">
+      @if (user()) {
+        <span class="user-name">{{ user()!.fullName }}</span>
+      }
+      <button class="btn-ghost" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+
+    <!-- Account status -->
+    @if (!loadingUser() && user()) {
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-label">Email</span>
+          <span class="status-value">{{ user()!.email }}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Onboarding</span>
+          <span
+            class="status-badge"
+            [class.complete]="user()!.onboardingCompleted"
+            [class.pending]="!user()!.onboardingCompleted"
+          >
+            {{ user()!.onboardingCompleted ? 'Complete' : 'Pending' }}
+          </span>
+        </div>
+      </div>
+    }
+
+    <!-- Media -->
+    <div class="section-title">Your Media</div>
+
+    @if (error()) {
+      <div class="alert alert-error">{{ error() }}</div>
+    }
+
+    @if (loadingMedia()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading media…</p>
+      </div>
+    } @else if (mediaItems().length === 0) {
+      <div class="empty-state">
+        <p>No media uploaded yet.</p>
+      </div>
+    } @else {
+      <div class="media-list">
+        @for (item of mediaItems(); track item.id) {
+          <div class="media-card">
+            <span class="media-date">{{ item.createdAt | date: 'mediumDate' }}</span>
+            <div class="media-urls">
+              @if (item.audioUrl) {
+                <a [href]="item.audioUrl" target="_blank" rel="noopener" class="media-link">
+                  🎵 Audio
+                </a>
+              }
+              @if (item.videoUrl) {
+                <a [href]="item.videoUrl" target="_blank" rel="noopener" class="media-link">
+                  🎬 Video
+                </a>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+</div>
