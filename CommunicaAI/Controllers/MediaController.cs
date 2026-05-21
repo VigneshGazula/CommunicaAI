@@ -5,6 +5,7 @@ using CommunicaAI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CommunicaAI.Controllers
 {
@@ -28,7 +29,9 @@ namespace CommunicaAI.Controllers
         public async Task<ActionResult<MediaOnboardingResponse>> UploadOnboardingMedia(
         [FromForm] MediaOnboardingUploadRequest request)
         {
-            var userIdClaim = User.FindFirst("sub")?.Value;
+            var userIdClaim =
+                             User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                             User.FindFirstValue("sub");
 
             if (!Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized(new { message = "Invalid token." });
@@ -94,7 +97,9 @@ namespace CommunicaAI.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<MediaOnboardingResponse>> GetMyMediaProfile()
         {
-            var userIdClaim = User.FindFirst("sub")?.Value;
+            var userIdClaim =
+    User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+    User.FindFirstValue("sub");
 
             if (!Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized(new { message = "Invalid token." });
