@@ -23,6 +23,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
 
+builder.Services.Configure<PythonVerificationServiceOptions>(
+    builder.Configuration.GetSection("PythonVerificationService"));
+
+builder.Services.AddHttpClient("PythonVerification", client =>
+{
+    var baseUrl = builder.Configuration["PythonVerificationService:BaseUrl"];
+    client.BaseAddress = new Uri(baseUrl!);
+    client.Timeout = TimeSpan.FromMinutes(2);
+});
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPythonVerificationService, PythonVerificationService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IBiometricVerificationService, BiometricVerificationService>();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();

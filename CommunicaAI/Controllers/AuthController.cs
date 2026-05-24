@@ -18,14 +18,16 @@ public class AuthController : ControllerBase
     private readonly IPasswordHasher<AppUser> _passwordHasher;
     private readonly ICloudinaryService _cloudinaryService;
     private readonly IBiometricVerificationService _biometricVerificationService;
+    private readonly IPythonVerificationService _pythonVerificationService;
 
-    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher, CloudinaryService cloudinaryService, BiometricVerificationService biometricVerificationService)
+    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher, CloudinaryService cloudinaryService, BiometricVerificationService biometricVerificationService, IPythonVerificationService pythonVerificationService)
     {
         _context = context;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
         _cloudinaryService = cloudinaryService;
         _biometricVerificationService = biometricVerificationService;
+        _pythonVerificationService = pythonVerificationService;
     }
 
     [HttpPost("register")]
@@ -110,20 +112,37 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> LoginWithAudio([FromForm] AudioLoginRequest request)
     {
         var email = request.Email.Trim().ToLower();
-        AppUser user = await _context.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+
         if (user == null)
-        {
-            return Unauthorized(new { message = "Invalid email or audio." });
-        }
+            return Unauthorized(new { message = "Invalid email or audio verification failed." });
 
-        var profile = await _context.UserVerificationProfiles.FirstOrDefaultAsync(x => x.UserId == user.Id);
+        var profile = await _context.UserVerificationProfiles
+            .FirstOrDefaultAsync(x => x.UserId == user.Id);
 
-        if (profile == null)
+        if (profile == null || string.IsNullOrWhiteSpace(profile.EnrollmentAudioUrl))
             return Unauthorized(new { message = "Audio verification not enrolled." });
 
-        var isVerified = await _biometricVerificationService.VerifyAudioAsync(profile, request.AudioFile);
+        PythonVerificationResult verificationResult;
 
-        if (!isVerified)
+        try
+        {
+            verificationResult = await _pythonVerificationService.VerifyAudioAsync(
+                profile.EnrollmentAudioUrl,
+                request.AudioFile);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Verification service unavailable.",
+                detail = ex.Message
+            });
+        }
+
+        if (!verificationResult.Verified)
             return Unauthorized(new { message = "Invalid email or audio verification failed." });
 
         var (token, expiresAtUtc) = _tokenService.CreateToken(user);
