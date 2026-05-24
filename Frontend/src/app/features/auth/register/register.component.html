@@ -1,50 +1,63 @@
 <div class="auth-page">
   <div class="auth-card">
-    <div class="auth-header">
-      <h1 class="brand">Communica<span>AI</span></h1>
-      <p>Create your account</p>
-    </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="field">
-        <label for="fullName">Full name</label>
-        <input
-          id="fullName"
-          type="text"
-          formControlName="fullName"
-          placeholder="Jane Smith"
-          autocomplete="name"
-        />
-        @if (form.controls.fullName.invalid && form.controls.fullName.touched) {
-          <span class="field-error">Full name is required.</span>
-        }
+    <!-- ── Step 1: Text form ─────────────────────────────────── -->
+    @if (step() === 'form') {
+      <div class="auth-header">
+        <h1 class="brand">Communica<span>AI</span></h1>
+        <p>Create your account</p>
       </div>
 
-      <div class="field">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          placeholder="you@example.com"
-          autocomplete="email"
-        />
-        @if (form.controls.email.invalid && form.controls.email.touched) {
-          <span class="field-error">Enter a valid email address.</span>
-        }
+      <form [formGroup]="form" (ngSubmit)="proceedToVideo()" novalidate>
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input id="fullName" type="text" formControlName="fullName"
+            placeholder="Jane Smith" autocomplete="name" />
+          @if (form.controls.fullName.invalid && form.controls.fullName.touched) {
+            <span class="field-error">Full name is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" formControlName="email"
+            placeholder="you@example.com" autocomplete="email" />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <span class="field-error">Enter a valid email address.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" formControlName="password"
+            placeholder="••••••••" autocomplete="new-password" />
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <span class="field-error">Password must be at least 6 characters.</span>
+          }
+        </div>
+
+        <button type="submit" class="btn-primary">Continue →</button>
+      </form>
+
+      <p class="auth-footer">Already have an account? <a routerLink="/login">Sign in</a></p>
+    }
+
+    <!-- ── Step 2: Video capture ─────────────────────────────── -->
+    @if (step() === 'video') {
+      <div class="step-header">
+        <button type="button" class="btn-back" (click)="backToForm()">← Back</button>
+        <span class="step-label">Step 1 of 2 — Face video</span>
       </div>
 
-      <div class="field">
-        <label for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="••••••••"
-          autocomplete="new-password"
-        />
-        @if (form.controls.password.invalid && form.controls.password.touched) {
-          <span class="field-error">Password must be at least 6 characters.</span>
+      <p class="capture-hint">
+        We'll record a short video of your face (up to 5 seconds).
+        Press <strong>Start recording</strong> when ready, then <strong>Stop</strong> whenever you're done.
+      </p>
+
+      <div class="video-wrapper">
+        <video #videoEl class="video-preview" playsinline></video>
+        @if (videoRecording()) {
+          <div class="timer-badge">{{ videoTimeLeft() }}s</div>
         }
       </div>
 
@@ -52,13 +65,94 @@
         <div class="alert alert-error">{{ error() }}</div>
       }
 
-      <button type="submit" class="btn-primary" [disabled]="loading()">
+      <div class="capture-controls">
+        @if (!videoReady() && !videoRecording()) {
+          <button type="button" class="btn-primary" (click)="startVideoCamera()">
+            Open camera
+          </button>
+        }
+        @if (videoReady() && !videoRecording()) {
+          <button type="button" class="btn-primary" (click)="startVideoRecording()">
+            Start recording
+          </button>
+          <button type="button" class="btn-ghost" (click)="retakeVideo()">
+            Reset
+          </button>
+        }
+        @if (videoRecording()) {
+          <button type="button" class="btn-danger" (click)="stopVideoRecording()">
+            Stop recording
+          </button>
+        }
+      </div>
+    }
+
+    <!-- ── Step 3: Audio capture ─────────────────────────────── -->
+    @if (step() === 'audio') {
+      <div class="step-header">
+        <button type="button" class="btn-back" (click)="backToVideo()">← Back</button>
+        <span class="step-label">Step 2 of 2 — Voice recording</span>
+      </div>
+
+      <p class="capture-hint">
+        Read the quote below out loud. Recording will run for up to 5 seconds.
+      </p>
+
+      <div class="quote-card">
+        <span class="quote-icon">😄</span>
+        <p class="quote-text">"{{ funnyQuote() }}"</p>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert-error">{{ error() }}</div>
+      }
+
+      <div class="capture-controls">
+        @if (!audioRecording() && !audioBlob) {
+          <button type="button" class="btn-primary" (click)="startAudioRecording()">
+            Start recording
+          </button>
+        }
+        @if (audioRecording()) {
+          <div class="audio-recording-row">
+            <div class="audio-pulse"></div>
+            <span class="audio-label">Recording… {{ audioTimeLeft() }}s left</span>
+            <button type="button" class="btn-danger" (click)="stopAudioRecording()">
+              Stop
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Step 4: Review & submit ───────────────────────────── -->
+    @if (step() === 'review') {
+      <div class="step-header">
+        <button type="button" class="btn-back" (click)="backToAudio()">← Back</button>
+        <span class="step-label">All done</span>
+      </div>
+
+      <div class="review-summary">
+        <div class="review-row">
+          <span class="review-icon">🎬</span>
+          <span>Face video recorded</span>
+          <span class="review-check">✓</span>
+        </div>
+        <div class="review-row">
+          <span class="review-icon">🎵</span>
+          <span>Voice recorded</span>
+          <span class="review-check">✓</span>
+        </div>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert-error">{{ error() }}</div>
+      }
+
+      <button type="button" class="btn-primary" (click)="submit()" [disabled]="loading()">
         @if (loading()) { Creating account… } @else { Create account }
       </button>
-    </form>
+    }
 
-    <p class="auth-footer">
-      Already have an account? <a routerLink="/login">Sign in</a>
-    </p>
   </div>
 </div>

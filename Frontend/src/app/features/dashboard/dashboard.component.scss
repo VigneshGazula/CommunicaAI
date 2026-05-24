@@ -12,131 +12,46 @@
   padding: 1rem 2rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-name {
-  font-size: 0.9rem;
-  color: var(--text-muted);
 }
 
 .dashboard-main {
   flex: 1;
   padding: 2rem;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Status card */
-.status-card {
+.profile-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 2rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.status-row {
+.profile-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   font-size: 0.9rem;
 }
 
-.status-label {
+.profile-label {
   color: var(--text-muted);
   font-weight: 500;
 }
 
-.status-value {
+.profile-value {
   color: var(--text);
 }
 
-.status-badge {
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.2rem 0.7rem;
-  border-radius: 999px;
-
-  &.complete {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  &.pending {
-    background: #fef3c7;
-    color: #92400e;
-  }
-}
-
-/* Section */
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 1rem;
-}
-
-/* Media list */
-.media-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.media-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.media-date {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.media-urls {
-  display: flex;
-  gap: 1rem;
-}
-
-.media-link {
-  font-size: 0.875rem;
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-/* States */
 .loading-state {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  justify-content: center;
   padding: 3rem 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
 }
 
 .spinner {
@@ -150,11 +65,4 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.empty-state {
-  padding: 3rem 0;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
 }

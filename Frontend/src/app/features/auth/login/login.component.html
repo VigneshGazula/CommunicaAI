@@ -5,46 +5,128 @@
       <p>Sign in to your account</p>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="field">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          placeholder="you@example.com"
-          autocomplete="email"
-        />
-        @if (form.controls.email.invalid && form.controls.email.touched) {
-          <span class="field-error">Enter a valid email address.</span>
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+      <button type="button" class="tab" [class.active]="mode() === 'password'" (click)="setMode('password')">Password</button>
+      <button type="button" class="tab" [class.active]="mode() === 'audio'" (click)="setMode('audio')">Audio</button>
+      <button type="button" class="tab" [class.active]="mode() === 'video'" (click)="setMode('video')">Video</button>
+    </div>
+
+    <!-- ── Password mode ── -->
+    @if (mode() === 'password') {
+      <form [formGroup]="passwordForm" (ngSubmit)="submitPassword()" novalidate>
+        <div class="field">
+          <label for="pw-email">Email</label>
+          <input id="pw-email" type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+          @if (passwordForm.controls.email.invalid && passwordForm.controls.email.touched) {
+            <span class="field-error">Enter a valid email address.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="pw-password">Password</label>
+          <input id="pw-password" type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+          @if (passwordForm.controls.password.invalid && passwordForm.controls.password.touched) {
+            <span class="field-error">Password is required.</span>
+          }
+        </div>
+
+        @if (error()) {
+          <div class="alert alert-error">{{ error() }}</div>
+        }
+
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          @if (loading()) { Signing in… } @else { Sign in }
+        </button>
+      </form>
+    }
+
+    <!-- ── Audio mode ── -->
+    @if (mode() === 'audio') {
+      <div class="capture-section">
+        <form [formGroup]="emailForm" novalidate>
+          <div class="field">
+            <label for="au-email">Email</label>
+            <input id="au-email" type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+            @if (emailForm.controls.email.invalid && emailForm.controls.email.touched) {
+              <span class="field-error">Enter a valid email address.</span>
+            }
+          </div>
+        </form>
+
+        <p class="capture-hint">Record your voice to authenticate.</p>
+
+        <div class="capture-controls">
+          @if (recordingState() === 'idle' && !recordedBlob) {
+            <button type="button" class="btn-primary" (click)="startCamera()">Open microphone</button>
+          }
+          @if (recordingState() === 'idle' && stream) {
+            <button type="button" class="btn-primary" (click)="startRecording()">Start recording</button>
+          }
+          @if (recordingState() === 'recording') {
+            <button type="button" class="btn-danger" (click)="stopRecording()">Stop recording</button>
+          }
+          @if (recordingState() === 'stopped') {
+            <button type="button" class="btn-ghost" (click)="retake()" [disabled]="loading()">Retake</button>
+            <button type="button" class="btn-primary" (click)="submitAudio()" [disabled]="loading()">
+              @if (loading()) { Signing in… } @else { Sign in }
+            </button>
+          }
+        </div>
+
+        @if (recordingState() === 'stopped' && !loading()) {
+          <p class="capture-hint">Recording ready. Press Sign in to continue.</p>
+        }
+
+        @if (error()) {
+          <div class="alert alert-error">{{ error() }}</div>
         }
       </div>
+    }
 
-      <div class="field">
-        <label for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="••••••••"
-          autocomplete="current-password"
-        />
-        @if (form.controls.password.invalid && form.controls.password.touched) {
-          <span class="field-error">Password must be at least 6 characters.</span>
+    <!-- ── Video mode ── -->
+    @if (mode() === 'video') {
+      <div class="capture-section">
+        <form [formGroup]="emailForm" novalidate>
+          <div class="field">
+            <label for="vi-email">Email</label>
+            <input id="vi-email" type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+            @if (emailForm.controls.email.invalid && emailForm.controls.email.touched) {
+              <span class="field-error">Enter a valid email address.</span>
+            }
+          </div>
+        </form>
+
+        <p class="capture-hint">Record a short video clip to authenticate.</p>
+
+        <div class="video-wrapper">
+          <video #videoEl class="video-preview" playsinline></video>
+        </div>
+
+        <div class="capture-controls">
+          @if (recordingState() === 'idle' && !recordedBlob) {
+            <button type="button" class="btn-primary" (click)="startCamera()">Start camera</button>
+          }
+          @if (recordingState() === 'idle' && stream) {
+            <button type="button" class="btn-primary" (click)="startRecording()">Start recording</button>
+          }
+          @if (recordingState() === 'recording') {
+            <button type="button" class="btn-danger" (click)="stopRecording()">Stop recording</button>
+          }
+          @if (recordingState() === 'stopped') {
+            <button type="button" class="btn-ghost" (click)="retake()" [disabled]="loading()">Retake</button>
+            <button type="button" class="btn-primary" (click)="submitVideo()" [disabled]="loading()">
+              @if (loading()) { Signing in… } @else { Sign in }
+            </button>
+          }
+        </div>
+
+        @if (error()) {
+          <div class="alert alert-error">{{ error() }}</div>
         }
       </div>
+    }
 
-      @if (error()) {
-        <div class="alert alert-error">{{ error() }}</div>
-      }
-
-      <button type="submit" class="btn-primary" [disabled]="loading()">
-        @if (loading()) { Signing in… } @else { Sign in }
-      </button>
-    </form>
-
-    <p class="auth-footer">
-      Don't have an account? <a routerLink="/register">Create one</a>
-    </p>
+    <p class="auth-footer">Don't have an account? <a routerLink="/register">Create one</a></p>
   </div>
 </div>
