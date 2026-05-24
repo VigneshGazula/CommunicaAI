@@ -11,7 +11,8 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<AppUser> Users => Set<AppUser>();
-    public DbSet<UserMediaProfile> UserMediaProfiles => Set<UserMediaProfile>();
+    public DbSet<UserVerificationProfile> UserVerificationProfiles => Set<UserVerificationProfile>();
+
 
     public object AppUser { get; internal set; }
 
@@ -28,15 +29,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(x => x.PasswordHash).IsRequired();
         });
 
-        modelBuilder.Entity<UserMediaProfile>(entity =>
+        modelBuilder.Entity<UserVerificationProfile>(entity =>
         {
             entity.HasKey(x => x.Id);
 
             entity.HasIndex(x => x.UserId).IsUnique();
 
             entity.HasOne(x => x.User)
-                  .WithOne(x => x.MediaProfile)
-                  .HasForeignKey<UserMediaProfile>(x => x.UserId)
+                  .WithOne(x => x.VerificationProfile)
+                  .HasForeignKey<UserVerificationProfile>(x => x.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

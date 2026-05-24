@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="CommunicaAI-Frontend/CommunicaAI-Frontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
   <Project Path="CommunicaAI/CommunicaAI.csproj" />
 </Solution>
