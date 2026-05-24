@@ -16,15 +16,20 @@ public class AuthController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ITokenService _tokenService;
     private readonly IPasswordHasher<AppUser> _passwordHasher;
+    private readonly ICloudinaryService _cloudinaryService;
+    private readonly IBiometricVerificationService _biometricVerificationService;
 
-    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher)
+    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher, CloudinaryService cloudinaryService, BiometricVerificationService biometricVerificationService)
     {
         _context = context;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
+        _cloudinaryService = cloudinaryService;
+        _biometricVerificationService = biometricVerificationService;
     }
 
     [HttpPost("register")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
         var email = request.Email.Trim().ToLower();
@@ -45,22 +50,36 @@ public class AuthController : ControllerBase
         _context.Add(user);
         await _context.SaveChangesAsync();
 
-        var(token, expiresAtUtc) = _tokenService.CreateToken(user);
+        var audioUpload = await _cloudinaryService.UploadAudioAsync(request.AudioFile, user.Id);
+        var videoUpload = await _cloudinaryService.UploadVideoAsync(request.VideoFile, user.Id);
 
-        var response = new AuthResponse
+        var profile = new UserVerificationProfile
+        {
+            UserId = user.Id,
+            EnrollmentAudioUrl = audioUpload.Url,
+            EnrollmentAudioPublicId = audioUpload.PublicId,
+            EnrollmentVideoUrl = videoUpload.Url,
+            EnrollmentVideoPublicId = videoUpload.PublicId,
+            EnrolledAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        _context.UserVerificationProfiles.Add(profile);
+        await _context.SaveChangesAsync();
+
+        var (token, expiresAtUtc) = _tokenService.CreateToken(user);
+
+        return Ok(new AuthResponse
         {
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Token = token,
             ExpiresAtUtc = expiresAtUtc
-        };
-        return Ok(response);
-
+        });
     }
 
-    [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+    [HttpPost("login/passoword")]
+    public async Task<ActionResult<AuthResponse>> LoginWithPassword([FromBody] PasswordLoginRequest request)
     {
         var email = request.Email.Trim().ToLower();
         AppUser user = await _context.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
@@ -76,27 +95,103 @@ public class AuthController : ControllerBase
 
         var (token, expiresAtUtc) = _tokenService.CreateToken(user);
 
-        var response = new AuthResponse
+        return Ok(new AuthResponse
         {
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Token = token,
             ExpiresAtUtc = expiresAtUtc
-        };
+        });
+    }
 
-        return Ok(response);
+    [HttpPost("login/audio")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<AuthResponse>> LoginWithAudio([FromForm] AudioLoginRequest request)
+    {
+        var email = request.Email.Trim().ToLower();
+        AppUser user = await _context.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+        if (user == null)
+        {
+            return Unauthorized(new { message = "Invalid email or audio." });
+        }
 
+        var profile = await _context.UserVerificationProfiles.FirstOrDefaultAsync(x => x.UserId == user.Id);
+
+        if (profile == null)
+            return Unauthorized(new { message = "Audio verification not enrolled." });
+
+        var isVerified = await _biometricVerificationService.VerifyAudioAsync(profile, request.AudioFile);
+
+        if (!isVerified)
+            return Unauthorized(new { message = "Invalid email or audio verification failed." });
+
+        var (token, expiresAtUtc) = _tokenService.CreateToken(user);
+
+        return Ok(new AuthResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc
+        });
+    }
+
+    [HttpPost("login/video")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<AuthResponse>> LoginWithVideo([FromForm] VideoLoginRequest request)
+    {
+        var email = request.Email.Trim().ToLower();
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == email);
+
+        if (user == null)
+            return Unauthorized(new { message = "Invalid email or video verification failed." });
+
+        var profile = await _context.UserVerificationProfiles
+            .FirstOrDefaultAsync(x => x.UserId == user.Id);
+
+        if (profile == null)
+            return Unauthorized(new { message = "Video verification not enrolled." });
+
+        var isVerified = await _biometricVerificationService.VerifyVideoAsync(profile, request.VideoFile);
+
+        if (!isVerified)
+            return Unauthorized(new { message = "Invalid email or video verification failed." });
+
+        var (token, expiresAtUtc) = _tokenService.CreateToken(user);
+
+        return Ok(new AuthResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc
+        });
     }
 
     [Authorize]
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
+        var userIdClaim = User.FindFirst("sub")?.Value;
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Invalid token." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
+        if (user == null)
+            return NotFound(new { message = "User not found." });
+
         return Ok(new
         {
-            Message = "Authenticated",
-            User = User.Identity?.Name
+            user.Id,
+            user.FullName,
+            user.Email
         });
     }
 

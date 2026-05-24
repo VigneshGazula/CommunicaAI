@@ -2,7 +2,7 @@
 
 namespace CommunicaAI.DTO.Auth
 {
-    public class LoginRequest
+    public class PasswordLoginRequest
     {
         [Required]
         [EmailAddress]
