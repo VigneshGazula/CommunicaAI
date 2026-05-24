@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
     private readonly IBiometricVerificationService _biometricVerificationService;
     private readonly IPythonVerificationService _pythonVerificationService;
 
-    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher, CloudinaryService cloudinaryService, BiometricVerificationService biometricVerificationService, IPythonVerificationService pythonVerificationService)
+    public AuthController(ApplicationDbContext context, ITokenService tokenService, IPasswordHasher<AppUser> passwordHasher, ICloudinaryService cloudinaryService, IBiometricVerificationService biometricVerificationService, IPythonVerificationService pythonVerificationService)
     {
         _context = context;
         _tokenService = tokenService;
