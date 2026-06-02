@@ -1,0 +1,109 @@
+<div class="live-page">
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Finishing interview...</p>
+    </div>
+  }
+
+  @if (session() && currentQuestion()) {
+    <div class="live-container">
+      <div class="live-sidebar">
+        <div class="interviewer-panel">
+          <div class="interviewer-avatar">
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <h3>AI Interviewer</h3>
+          <p class="interviewer-status">Listening...</p>
+        </div>
+
+        <div class="session-info">
+          <div class="info-item">
+            <span class="info-label">Role</span>
+            <span class="info-value">{{ session()!.setup.role }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Difficulty</span>
+            <span class="info-value">{{ session()!.setup.difficulty | titlecase }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Questions</span>
+            <span class="info-value">{{ session()!.questions.length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="live-main">
+        <div class="live-header">
+          <div class="question-progress">
+            Question {{ session()!.currentQuestionIndex + 1 }} of {{ session()!.questions.length }}
+          </div>
+          <div class="timer">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {{ formattedTime }}
+          </div>
+        </div>
+
+        <div class="question-card">
+          <h2 class="question-text">{{ currentQuestion()!.text }}</h2>
+        </div>
+
+        <form [formGroup]="answerForm" class="answer-section">
+          <label for="answer" class="answer-label">Your Answer</label>
+          <textarea 
+            id="answer"
+            formControlName="answer"
+            placeholder="Type your answer here..."
+            rows="8"
+            class="answer-input"
+          ></textarea>
+
+          <div class="recording-hint">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"/>
+            </svg>
+            <span>Recording UI placeholder - type your answer above</span>
+          </div>
+        </form>
+
+        @if (error()) {
+          <div class="alert alert-error">{{ error() }}</div>
+        }
+
+        <div class="live-actions">
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            [disabled]="isFirstQuestion"
+            (click)="previousQuestion()"
+          >
+            Previous
+          </button>
+
+          @if (!isLastQuestion) {
+            <button 
+              type="button" 
+              class="btn-primary" 
+              (click)="nextQuestion()"
+            >
+              Next Question
+            </button>
+          } @else {
+            <button 
+              type="button" 
+              class="btn-finish" 
+              (click)="finishInterview()"
+            >
+              Finish Interview
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

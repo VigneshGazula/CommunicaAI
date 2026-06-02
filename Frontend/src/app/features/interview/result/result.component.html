@@ -1,0 +1,113 @@
+<div class="result-page">
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+    </div>
+  } @else if (result()) {
+    <div class="result-container">
+      <div class="result-header">
+        <a routerLink="/dashboard" class="back-link">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Back to Dashboard
+        </a>
+        <h1>Interview Results</h1>
+        <p>{{ result()!.setup.role }} • {{ result()!.setup.difficulty | titlecase }}</p>
+        <p class="result-date">{{ result()!.completedAt | date: 'MMM d, y, h:mm a' }}</p>
+      </div>
+
+      <div class="score-overview">
+        <div class="score-main">
+          <div class="score-circle" [style.border-color]="getScoreColor(result()!.overallScore)">
+            <span class="score-value" [style.color]="getScoreColor(result()!.overallScore)">
+              {{ result()!.overallScore }}%
+            </span>
+            <span class="score-label">Overall</span>
+          </div>
+        </div>
+        <div class="score-breakdown">
+          <div class="score-item">
+            <span class="score-item-label">Communication</span>
+            <div class="score-bar">
+              <div 
+                class="score-bar-fill" 
+                [style.width.%]="result()!.communicationScore"
+                [style.background]="getScoreColor(result()!.communicationScore)"
+              ></div>
+            </div>
+            <span class="score-item-value">{{ result()!.communicationScore }}%</span>
+          </div>
+          <div class="score-item">
+            <span class="score-item-label">Confidence</span>
+            <div class="score-bar">
+              <div 
+                class="score-bar-fill" 
+                [style.width.%]="result()!.confidenceScore"
+                [style.background]="getScoreColor(result()!.confidenceScore)"
+              ></div>
+            </div>
+            <span class="score-item-value">{{ result()!.confidenceScore }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <h3 class="card-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Strengths
+          </h3>
+          <ul class="list">
+            @for (strength of result()!.strengths; track strength) {
+              <li>{{ strength }}</li>
+            }
+          </ul>
+        </div>
+
+        <div class="result-card">
+          <h3 class="card-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            Areas for Improvement
+          </h3>
+          <ul class="list">
+            @for (improvement of result()!.improvements; track improvement) {
+              <li>{{ improvement }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="transcript-section">
+        <div class="transcript-header">
+          <h3>Interview Transcript</h3>
+          <button class="btn-copy" (click)="copyTranscript()">
+            @if (copySuccess()) {
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Copied!
+            } @else {
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Copy Transcript
+            }
+          </button>
+        </div>
+        <div class="transcript-content">
+          <pre>{{ result()!.transcript }}</pre>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <a routerLink="/interview/setup" class="btn-primary">Start New Interview</a>
+        <a routerLink="/history" class="btn-secondary">View All Sessions</a>
+      </div>
+    </div>
+  }
+</div>

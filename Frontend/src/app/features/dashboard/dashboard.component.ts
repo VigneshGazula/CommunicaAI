@@ -1,5 +1,6 @@
 import { Component, inject, signal, afterNextRender } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { InterviewHistoryService } from '../../core/services/interview-history.service';
 import { UserProfile } from '../../core/models/auth.models';
@@ -9,7 +10,7 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DatePipe, TitleCasePipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
