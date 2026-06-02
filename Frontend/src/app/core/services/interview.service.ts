@@ -90,6 +90,30 @@ export class InterviewService {
     return of(void 0).pipe(delay(100));
   }
 
+  saveTranscript(sessionId: string, questionId: string, transcript: string): Observable<void> {
+    const session = this.getCurrentSession();
+    if (!session || session.id !== sessionId) {
+      throw new Error('Session not found');
+    }
+
+    // Find or create answer for this question
+    let answer = session.answers.find(a => a.questionId === questionId);
+    if (answer) {
+      answer.text = transcript;
+      answer.timestamp = new Date();
+    } else {
+      answer = {
+        questionId,
+        text: transcript,
+        timestamp: new Date()
+      };
+      session.answers.push(answer);
+    }
+    
+    this.saveCurrentSession(session);
+    return of(void 0).pipe(delay(100));
+  }
+
   updateQuestionIndex(sessionId: string, index: number): Observable<void> {
     const session = this.getCurrentSession();
     if (!session || session.id !== sessionId) {
