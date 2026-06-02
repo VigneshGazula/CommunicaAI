@@ -248,7 +248,10 @@ export class RegisterComponent implements OnDestroy {
     this.error.set('');
 
     this.auth.register(fd).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: (response) => {
+        this.auth.saveTokenSync(response.token);
+        this.router.navigate(['/dashboard']);
+      },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'Registration failed. Please try again.');
         this.loading.set(false);

@@ -5,7 +5,13 @@
   </header>
 
   <main class="dashboard-main">
-    @if (user()) {
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+      </div>
+    } @else if (error()) {
+      <div class="alert alert-error">{{ error() }}</div>
+    } @else if (user()) {
       <div class="profile-card">
         <div class="profile-row">
           <span class="profile-label">Full name</span>
@@ -15,10 +21,6 @@
           <span class="profile-label">Email</span>
           <span class="profile-value">{{ user()!.email }}</span>
         </div>
-      </div>
-    } @else {
-      <div class="loading-state">
-        <div class="spinner"></div>
       </div>
     }
   </main>

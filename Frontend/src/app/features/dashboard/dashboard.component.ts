@@ -1,5 +1,4 @@
-import { Component, inject, OnInit, signal, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Component, inject, signal, afterNextRender } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserProfile } from '../../core/models/auth.models';
@@ -11,21 +10,28 @@ import { UserProfile } from '../../core/models/auth.models';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly platformId = inject(PLATFORM_ID);
 
   readonly user = signal<UserProfile | null>(null);
+  readonly loading = signal(true);
   readonly error = signal('');
 
-  ngOnInit(): void {
-    // Skip API calls during SSR — token lives in the browser only.
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.auth.me().subscribe({
-      next: (profile) => this.user.set(profile),
-      error: () => this.logout()
+  constructor() {
+    // afterNextRender only runs in the browser, never during SSR.
+    // This guarantees localStorage is available and the token is readable.
+    afterNextRender(() => {
+      this.auth.me().subscribe({
+        next: (profile) => {
+          this.user.set(profile);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.auth.logout();
+          this.router.navigate(['/login']);
+        }
+      });
     });
   }
 

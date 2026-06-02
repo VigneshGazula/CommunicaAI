@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, UserProfile } from '../models/auth.models';
 
@@ -12,27 +12,24 @@ export class AuthService {
   private readonly base = `${environment.apiBaseUrl}/api/auth`;
 
   register(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/register`, formData).pipe(
-      tap(res => this.saveToken(res.token))
-    );
+    return this.http.post<AuthResponse>(`${this.base}/register`, formData);
   }
 
-  loginPassword(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login/password`, formData).pipe(
-      tap(res => this.saveToken(res.token))
-    );
+  loginPassword(payload: { email: string; password: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/login/password`, payload);
   }
 
   loginAudio(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login/audio`, formData).pipe(
-      tap(res => this.saveToken(res.token))
-    );
+    return this.http.post<AuthResponse>(`${this.base}/login/audio`, formData);
   }
 
   loginVideo(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login/video`, formData).pipe(
-      tap(res => this.saveToken(res.token))
-    );
+    return this.http.post<AuthResponse>(`${this.base}/login/video`, formData);
+  }
+
+  saveTokenSync(token: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    localStorage.setItem('token', token);
   }
 
   me(): Observable<UserProfile> {
@@ -51,10 +48,5 @@ export class AuthService {
   logout(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     localStorage.removeItem('token');
-  }
-
-  private saveToken(token: string): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    localStorage.setItem('token', token);
   }
 }

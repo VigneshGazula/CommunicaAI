@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CommunicaAI.Controllers;
 
@@ -80,7 +81,7 @@ public class AuthController : ControllerBase
         });
     }
 
-    [HttpPost("login/passoword")]
+    [HttpPost("login/password")]
     public async Task<ActionResult<AuthResponse>> LoginWithPassword([FromBody] PasswordLoginRequest request)
     {
         var email = request.Email.Trim().ToLower();
@@ -196,7 +197,7 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
-        var userIdClaim = User.FindFirst("sub")?.Value;
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (!Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Invalid token." });

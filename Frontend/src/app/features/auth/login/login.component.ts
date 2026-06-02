@@ -63,10 +63,7 @@ export class LoginComponent implements OnDestroy {
       return;
     }
     const { email, password } = this.passwordForm.getRawValue();
-    const fd = new FormData();
-    fd.append('email', email);
-    fd.append('password', password);
-    this.callLogin(() => this.auth.loginPassword(fd));
+    this.callLogin(() => this.auth.loginPassword({ email, password }));
   }
 
   // ── Audio / Video capture ────────────────────────────────────
@@ -145,7 +142,10 @@ export class LoginComponent implements OnDestroy {
     this.loading.set(true);
     this.error.set('');
     fn().subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: (response) => {
+        this.auth.saveTokenSync(response.token);
+        this.router.navigate(['/dashboard']);
+      },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'Login failed. Please try again.');
         this.loading.set(false);

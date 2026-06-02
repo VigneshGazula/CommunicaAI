@@ -1,41 +1,72 @@
-import tempfile
-from scipy.spatial.distance import cosine
-from speechbrain.inference.speaker import SpeakerRecognition
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import Optional
 
+import torchaudio
+from speechbrain.inference.speaker import SpeakerRecognition
 
 verification = SpeakerRecognition.from_hparams(
     source="speechbrain/spkrec-ecapa-voxceleb"
 )
 
 
-async def verify_audio(enrolled_bytes: bytes, sample_bytes: bytes):
-    with tempfile.NamedTemporaryFile(suffix=".wav") as enrolled_temp:
-        with tempfile.NamedTemporaryFile(suffix=".wav") as sample_temp:
+def _suffix_from_filename(filename: Optional[str]) -> str:
+    suffix = Path(filename or "").suffix
+    return suffix if suffix else ".wav"
 
-            enrolled_temp.write(enrolled_bytes)
-            sample_temp.write(sample_bytes)
 
-            enrolled_temp.flush()
-            sample_temp.flush()
+def _write_temp_audio(data: bytes, suffix: str) -> Path:
+    temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        temp_file.write(data)
+        temp_file.flush()
+        return Path(temp_file.name)
+    finally:
+        temp_file.close()
 
-            enrolled_embedding = verification.encode_file(
-                enrolled_temp.name
-            )
 
-            sample_embedding = verification.encode_file(
-                sample_temp.name
-            )
+def _load_audio_tensor(path: Path):
+    waveform, sample_rate = torchaudio.load(str(path))
 
-            similarity = 1 - cosine(
-                enrolled_embedding.squeeze().detach().numpy(),
-                sample_embedding.squeeze().detach().numpy()
-            )
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
 
-            threshold = 0.75
+    if sample_rate != 16000:
+        waveform = torchaudio.functional.resample(waveform, sample_rate, 16000)
 
-            verified = similarity >= threshold
+    return waveform
 
-            return {
-                "verified": bool(verified),
-                "score": float(similarity)
-            }
+
+async def verify_audio(
+    enrolled_bytes: bytes,
+    sample_bytes: bytes,
+    enrolled_filename: Optional[str] = None,
+    sample_filename: Optional[str] = None,
+):
+    enrolled_path = _write_temp_audio(
+        enrolled_bytes,
+        _suffix_from_filename(enrolled_filename),
+    )
+    sample_path = _write_temp_audio(
+        sample_bytes,
+        _suffix_from_filename(sample_filename),
+    )
+
+    try:
+        enrolled_waveform = _load_audio_tensor(enrolled_path)
+        sample_waveform = _load_audio_tensor(sample_path)
+
+        score, prediction = verification.verify_batch(
+            enrolled_waveform,
+            sample_waveform,
+        )
+
+        return {
+            "verified": bool(prediction.squeeze().item()),
+            "score": float(score.squeeze().item()),
+        }
+    finally:
+        if enrolled_path.exists():
+            enrolled_path.unlink()
+        if sample_path.exists():
+            sample_path.unlink()
