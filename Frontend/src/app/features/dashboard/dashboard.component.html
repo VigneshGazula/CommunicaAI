@@ -9,19 +9,69 @@
       <div class="loading-state">
         <div class="spinner"></div>
       </div>
-    } @else if (error()) {
-      <div class="alert alert-error">{{ error() }}</div>
-    } @else if (user()) {
-      <div class="profile-card">
-        <div class="profile-row">
-          <span class="profile-label">Full name</span>
-          <span class="profile-value">{{ user()!.fullName }}</span>
+    } @else {
+      <div class="dashboard-welcome">
+        <h1>Welcome back, {{ user()?.fullName || 'User' }}!</h1>
+        <p>Ready to practice your interview skills?</p>
+      </div>
+
+      <button class="btn-start-interview" (click)="startInterview()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Start Interview
+      </button>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats()?.totalInterviews || 0 }}</div>
+          <div class="stat-label">Interviews</div>
         </div>
-        <div class="profile-row">
-          <span class="profile-label">Email</span>
-          <span class="profile-value">{{ user()!.email }}</span>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats()?.averageScore || 0 }}%</div>
+          <div class="stat-label">Avg Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats()?.currentStreak || 0 }}</div>
+          <div class="stat-label">Day Streak</div>
         </div>
       </div>
+
+      @if (recentSessions().length > 0) {
+        <div class="section">
+          <div class="section-header">
+            <h2>Recent Sessions</h2>
+            <a routerLink="/history" class="link">View all</a>
+          </div>
+          <div class="sessions-grid">
+            @for (session of recentSessions(); track session.sessionId) {
+              <a [routerLink]="['/interview/result', session.sessionId]" class="session-card">
+                <div class="session-header">
+                  <span class="session-role">{{ session.setup.role }}</span>
+                  <span class="session-score">{{ session.overallScore }}%</span>
+                </div>
+                <div class="session-meta">
+                  <span>{{ session.setup.difficulty | titlecase }}</span>
+                  <span>•</span>
+                  <span>{{ session.setup.questionCount }} questions</span>
+                </div>
+                <div class="session-date">
+                  {{ session.completedAt | date: 'MMM d, y' }}
+                </div>
+              </a>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <h3>No interviews yet</h3>
+          <p>Start your first mock interview to practice your skills.</p>
+        </div>
+      }
     }
   </main>
 </div>
