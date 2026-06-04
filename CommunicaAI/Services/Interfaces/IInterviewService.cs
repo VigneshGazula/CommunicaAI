@@ -8,5 +8,7 @@ namespace CommunicaAI.Services.Interfaces
         Task<InterviewSessionResponse?> GetInterviewAsync(Guid sessionId, Guid userId);
         Task<List<InterviewSessionResponse>> GetUserInterviewsAsync(Guid userId);
         Task<bool> CompleteInterviewAsync(Guid sessionId, Guid userId);
+        Task<List<InterviewHistoryResponse>> GetUserHistoryAsync(Guid userId);
+        Task<InterviewDetailResponse?> GetInterviewDetailsAsync(Guid sessionId, Guid userId);
     }
 }

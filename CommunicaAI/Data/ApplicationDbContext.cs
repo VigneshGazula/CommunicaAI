@@ -13,6 +13,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserVerificationProfile> UserVerificationProfiles => Set<UserVerificationProfile>();
     public DbSet<InterviewSession> InterviewSessions => Set<InterviewSession>();
+    public DbSet<QuestionBank> QuestionBanks => Set<QuestionBank>();
+    public DbSet<InterviewQuestion> InterviewQuestions => Set<InterviewQuestion>();
+    public DbSet<InterviewAnswer> InterviewAnswers => Set<InterviewAnswer>();
+    public DbSet<InterviewResult> InterviewResults => Set<InterviewResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +52,58 @@ public class ApplicationDbContext : DbContext
             entity.Property(x => x.Difficulty).IsRequired().HasMaxLength(50);
             entity.Property(x => x.Status).IsRequired().HasMaxLength(50);
             entity.Property(x => x.StartedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<QuestionBank>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.Role, x.Category, x.Difficulty });
+            entity.Property(x => x.Role).IsRequired().HasMaxLength(100);
+            entity.Property(x => x.Category).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.Difficulty).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.QuestionText).IsRequired().HasMaxLength(1000);
+        });
+
+        modelBuilder.Entity<InterviewQuestion>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.InterviewSessionId);
+            entity.Property(x => x.Category).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.QuestionText).IsRequired().HasMaxLength(1000);
+            
+            entity.HasOne(x => x.InterviewSession)
+                  .WithMany()
+                  .HasForeignKey(x => x.InterviewSessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InterviewAnswer>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.InterviewQuestionId).IsUnique();
+            entity.HasIndex(x => x.InterviewSessionId);
+            entity.Property(x => x.Transcript).IsRequired();
+
+            entity.HasOne(x => x.InterviewQuestion)
+                  .WithOne(x => x.Answer)
+                  .HasForeignKey<InterviewAnswer>(x => x.InterviewQuestionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.InterviewSession)
+                  .WithMany()
+                  .HasForeignKey(x => x.InterviewSessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InterviewResult>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.InterviewSessionId).IsUnique();
+
+            entity.HasOne(x => x.InterviewSession)
+                  .WithOne()
+                  .HasForeignKey<InterviewResult>(x => x.InterviewSessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

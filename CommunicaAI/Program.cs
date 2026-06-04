@@ -47,6 +47,22 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
 
+// Question Bank Module
+builder.Services.AddScoped<IQuestionBankRepository, QuestionBankRepository>();
+builder.Services.AddScoped<IQuestionBankService, QuestionBankService>();
+
+// Interview Question Module
+builder.Services.AddScoped<IInterviewQuestionRepository, InterviewQuestionRepository>();
+builder.Services.AddScoped<IInterviewQuestionService, InterviewQuestionService>();
+
+// Interview Answer Module
+builder.Services.AddScoped<IInterviewAnswerRepository, InterviewAnswerRepository>();
+builder.Services.AddScoped<IInterviewAnswerService, InterviewAnswerService>();
+
+// Interview Result Module
+builder.Services.AddScoped<IInterviewResultRepository, InterviewResultRepository>();
+builder.Services.AddScoped<IInterviewResultService, InterviewResultService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
