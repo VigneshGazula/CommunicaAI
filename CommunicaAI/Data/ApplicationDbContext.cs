@@ -13,7 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserVerificationProfile> UserVerificationProfiles => Set<UserVerificationProfile>();
 
-
+    public DbSet<InterviewSession> InterviewSessions { get; set; }
     public object AppUser { get; internal set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
