@@ -12,9 +12,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<UserVerificationProfile> UserVerificationProfiles => Set<UserVerificationProfile>();
-
-    public DbSet<InterviewSession> InterviewSessions { get; set; }
-    public object AppUser { get; internal set; }
+    public DbSet<InterviewSession> InterviewSessions => Set<InterviewSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +37,17 @@ public class ApplicationDbContext : DbContext
                   .WithOne(x => x.VerificationProfile)
                   .HasForeignKey<UserVerificationProfile>(x => x.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InterviewSession>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.UserId);
+            entity.Property(x => x.Role).IsRequired().HasMaxLength(100);
+            entity.Property(x => x.Topic).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.Difficulty).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(50);
+            entity.Property(x => x.StartedAt).IsRequired();
         });
     }
 }

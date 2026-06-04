@@ -1,7 +1,10 @@
 using CommunicaAI.Data;
 using CommunicaAI.Models;
 using CommunicaAI.Models.Configurations;
+using CommunicaAI.Repositories;
+using CommunicaAI.Repositories.Interfaces;
 using CommunicaAI.Services;
+using CommunicaAI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +42,10 @@ builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IBiometricVerificationService, BiometricVerificationService>();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+// Interview Module
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IInterviewService, InterviewService>();
 
 builder.Services.AddCors(options =>
 {
