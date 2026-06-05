@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<InterviewAnswer> InterviewAnswers => Set<InterviewAnswer>();
     public DbSet<InterviewResult> InterviewResults => Set<InterviewResult>();
 
+    public DbSet<AnswerEvaluation> AnswerEvaluations { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

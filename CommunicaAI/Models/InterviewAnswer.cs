@@ -19,5 +19,7 @@ namespace CommunicaAI.Models
 
         public InterviewQuestion? InterviewQuestion { get; set; }
         public InterviewSession? InterviewSession { get; set; }
+
+        public AnswerEvaluation? Evaluation { get; set; }
     }
 }
