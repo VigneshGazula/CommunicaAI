@@ -7,23 +7,35 @@ namespace CommunicaAI.Controllers;
 [Route("api/test")]
 public class TestController : ControllerBase
 {
-    private readonly IGeminiService _geminiService;
+    private readonly ITranscriptionService _transcriptionService;
 
     public TestController(
-        IGeminiService geminiService)
+        ITranscriptionService transcriptionService)
     {
-        _geminiService = geminiService;
+        _transcriptionService = transcriptionService;
     }
 
-    [HttpGet("gemini")]
-    public async Task<IActionResult> TestGemini()
+    [HttpPost("transcribe")]
+    public async Task<IActionResult> Transcribe(
+        IFormFile audioFile)
     {
-        var result =
-            await _geminiService.EvaluateAnswerAsync(
-                "What is Dependency Injection?",
-                "Dependency Injection allows dependencies to be supplied from outside the class."
-            );
+        if (audioFile == null || audioFile.Length == 0)
+        {
+            return BadRequest("Audio file required.");
+        }
 
-        return Ok(result);
+        using var stream =
+            audioFile.OpenReadStream();
+
+        var transcript =
+            await _transcriptionService
+                .TranscribeAsync(
+                    stream,
+                    audioFile.ContentType);
+
+        return Ok(new
+        {
+            Transcript = transcript
+        });
     }
 }
