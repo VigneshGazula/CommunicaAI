@@ -1,3 +1,4 @@
+using CommunicaAI.Configurations;
 using CommunicaAI.Data;
 using CommunicaAI.Models;
 using CommunicaAI.Models.Configurations;
@@ -25,6 +26,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
+
+builder.Services.Configure<GeminiSettings>(
+    builder.Configuration.GetSection("Gemini"));
 
 builder.Services.Configure<PythonVerificationServiceOptions>(
     builder.Configuration.GetSection("PythonVerificationService"));
