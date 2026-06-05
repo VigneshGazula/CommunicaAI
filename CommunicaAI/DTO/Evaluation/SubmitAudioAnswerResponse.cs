@@ -1,7 +1,11 @@
-﻿namespace CommunicaAI.DTOs.Evaluation;
-
-public class GeminiEvaluationResponse
+﻿public class SubmitAudioAnswerResponse
 {
+    public Guid AnswerId { get; set; }
+
+    public string Transcript { get; set; } = string.Empty;
+
+    public string AudioUrl { get; set; } = string.Empty;
+
     public int TechnicalScore { get; set; }
 
     public int ClarityScore { get; set; }
@@ -9,10 +13,6 @@ public class GeminiEvaluationResponse
     public int CompletenessScore { get; set; }
 
     public int OverallScore { get; set; }
-
-    public string Strengths { get; set; } = string.Empty;
-
-    public string Improvements { get; set; } = string.Empty;
 
     public string Feedback { get; set; } = string.Empty;
 }

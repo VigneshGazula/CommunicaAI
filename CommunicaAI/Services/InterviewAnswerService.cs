@@ -10,15 +10,24 @@ namespace CommunicaAI.Services
         private readonly IInterviewAnswerRepository _answerRepository;
         private readonly IInterviewQuestionRepository _questionRepository;
         private readonly IInterviewRepository _interviewRepository;
+        private readonly ITranscriptionService _transcriptionService;
+        private readonly IGeminiService _geminiService;
+        private readonly ICloudinaryService _cloudinaryService;
 
         public InterviewAnswerService(
             IInterviewAnswerRepository answerRepository,
             IInterviewQuestionRepository questionRepository,
-            IInterviewRepository interviewRepository)
+            IInterviewRepository interviewRepository,
+            ITranscriptionService transcriptionService,
+            IGeminiService geminiService,
+            ICloudinaryService cloudinaryService)
         {
             _answerRepository = answerRepository;
             _questionRepository = questionRepository;
             _interviewRepository = interviewRepository;
+            _transcriptionService = transcriptionService;
+            _geminiService = geminiService;
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<AnswerResponse> SubmitAnswerAsync(Guid sessionId, Guid userId, AnswerSubmitRequest request)
@@ -62,6 +71,11 @@ namespace CommunicaAI.Services
                 Transcript = created.Transcript,
                 AnsweredAt = created.AnsweredAt
             };
+        }
+
+        public Task<SubmitAudioAnswerResponse> SubmitAudioAnswerAsync(Guid sessionId, Guid questionId, IFormFile audioFile, int durationSeconds, int userId)
+        {
+            throw new NotImplementedException();
         }
     }
 }
