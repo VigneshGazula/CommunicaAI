@@ -48,6 +48,8 @@ builder.Services.AddScoped<IBiometricVerificationService, BiometricVerificationS
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGeminiService,GeminiService>();
+builder.Services.AddScoped<IAnswerEvaluationRepository,AnswerEvaluationRepository>();
+builder.Services.AddScoped<IInterviewAnswerRepository, InterviewAnswerRepository>();
 
 // Interview Module
 builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();

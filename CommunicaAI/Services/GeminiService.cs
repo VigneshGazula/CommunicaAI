@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
 using CommunicaAI.Configurations;
-using CommunicaAI.DTOs.Evaluation;
 using CommunicaAI.Services.Interfaces;
 using Microsoft.Extensions.Options;
 
@@ -20,7 +19,7 @@ public class GeminiService : IGeminiService
         _settings = options.Value;
     }
 
-    public async Task<GeminiEvaluationResponse>
+    public async Task<SubmitAudioAnswerResponse>
         EvaluateAnswerAsync(
             string question,
             string answer)
@@ -90,7 +89,7 @@ Do not include explanation outside JSON.";
             .GetProperty("text")
             .GetString();
 
-        return JsonSerializer.Deserialize<GeminiEvaluationResponse>(
+        return JsonSerializer.Deserialize<SubmitAudioAnswerResponse>(
             aiResponse!,
             new JsonSerializerOptions
             {

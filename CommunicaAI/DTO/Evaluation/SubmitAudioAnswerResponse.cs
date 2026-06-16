@@ -12,6 +12,9 @@
 
     public int CompletenessScore { get; set; }
 
+    public string Strengths { get; set; } = string.Empty;
+
+    public string Improvements { get; set; } = string.Empty;
     public int OverallScore { get; set; }
 
     public string Feedback { get; set; } = string.Empty;

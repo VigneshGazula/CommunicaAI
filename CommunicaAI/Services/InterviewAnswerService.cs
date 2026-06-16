@@ -13,6 +13,7 @@ namespace CommunicaAI.Services
         private readonly ITranscriptionService _transcriptionService;
         private readonly IGeminiService _geminiService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IAnswerEvaluationRepository _answerEvaluationRepository;
 
         public InterviewAnswerService(
             IInterviewAnswerRepository answerRepository,
@@ -20,7 +21,8 @@ namespace CommunicaAI.Services
             IInterviewRepository interviewRepository,
             ITranscriptionService transcriptionService,
             IGeminiService geminiService,
-            ICloudinaryService cloudinaryService)
+            ICloudinaryService cloudinaryService,
+            IAnswerEvaluationRepository answerEvaluationRepository)
         {
             _answerRepository = answerRepository;
             _questionRepository = questionRepository;
@@ -28,6 +30,7 @@ namespace CommunicaAI.Services
             _transcriptionService = transcriptionService;
             _geminiService = geminiService;
             _cloudinaryService = cloudinaryService;
+            _answerEvaluationRepository = answerEvaluationRepository;
         }
 
         public async Task<AnswerResponse> SubmitAnswerAsync(Guid sessionId, Guid userId, AnswerSubmitRequest request)
@@ -78,7 +81,7 @@ namespace CommunicaAI.Services
     Guid questionId,
     IFormFile audioFile,
     int durationSeconds,
-    int userId)
+    Guid userId)
         {
             // Validate session
             var session = await _interviewRepository.GetByIdAsync(sessionId);
@@ -150,6 +153,22 @@ namespace CommunicaAI.Services
             };
 
             await _answerRepository.CreateAsync(answer);
+
+            var answerEvaluation = new AnswerEvaluation
+            {
+                Id = Guid.NewGuid(),
+                InterviewAnswerId = answer.Id,
+                TechnicalScore = evaluation.TechnicalScore,
+                ClarityScore = evaluation.ClarityScore,
+                CompletenessScore = evaluation.CompletenessScore,
+                OverallScore = evaluation.OverallScore,
+                Strengths = evaluation.Strengths,
+                Improvements = evaluation.Improvements,
+                Feedback = evaluation.Feedback,
+                EvaluatedAt = DateTime.UtcNow
+            };
+
+            await _answerEvaluationRepository.CreateAsync(answerEvaluation);
 
             // Mark question answered
             question.IsAnswered = true;

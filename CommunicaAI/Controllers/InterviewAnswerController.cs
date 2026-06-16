@@ -1,4 +1,9 @@
-﻿[ApiController]
+﻿using CommunicaAI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+[ApiController]
 [Route("api/interviews")]
 [Authorize]
 public class InterviewAnswerController : ControllerBase
@@ -18,8 +23,14 @@ public class InterviewAnswerController : ControllerBase
         [FromForm] IFormFile audioFile,
         [FromForm] int durationSeconds)
     {
-        var userId = Guid.Parse(
-            User.FindFirst("UserId")!.Value);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+        {
+            return Unauthorized();
+        }
+
+        var userId = Guid.Parse(userIdClaim);
 
         var result =
             await _answerService.SubmitAudioAnswerAsync(

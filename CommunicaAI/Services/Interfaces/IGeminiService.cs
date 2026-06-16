@@ -1,10 +1,8 @@
-﻿using CommunicaAI.DTOs.Evaluation;
-
-namespace CommunicaAI.Services.Interfaces
+﻿namespace CommunicaAI.Services.Interfaces
 {
     public interface IGeminiService
     {
-        Task<GeminiEvaluationResponse> EvaluateAnswerAsync(
+        Task<SubmitAudioAnswerResponse> EvaluateAnswerAsync(
         string question,
         string answer);
     }
