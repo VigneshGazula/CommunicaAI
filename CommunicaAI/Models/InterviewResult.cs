@@ -1,22 +1,24 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace CommunicaAI.Models
+public class InterviewResult
 {
-    public class InterviewResult
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; }
 
-        [Required]
-        public Guid InterviewSessionId { get; set; }
+    public Guid InterviewSessionId { get; set; }
 
-        public int TotalQuestions { get; set; }
+    public int OverallScore { get; set; }
 
-        public int AnsweredQuestions { get; set; }
+    public int TechnicalScore { get; set; }
 
-        public double CompletionPercentage { get; set; }
+    public int CommunicationScore { get; set; }
 
-        public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public int ConfidenceScore { get; set; }
 
-        public InterviewSession? InterviewSession { get; set; }
-    }
+    public string Strengths { get; set; } = string.Empty;
+
+    public string Weaknesses { get; set; } = string.Empty;
+
+    public string Recommendations { get; set; } = string.Empty;
+
+    public string Summary { get; set; } = string.Empty;
+
+    public DateTime GeneratedAt { get; set; }
 }
