@@ -3,7 +3,7 @@ using CommunicaAI.Models;
 using System.Security.AccessControl;
 using ResourceType = CloudinaryDotNet.Actions.ResourceType;
 
-namespace CommunicaAI.Services
+namespace CommunicaAI.Services.Interfaces
 {
     public interface ICloudinaryService
     {

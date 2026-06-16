@@ -11,6 +11,6 @@ SubmitAudioAnswerAsync(
     Guid questionId,
     IFormFile audioFile,
     int durationSeconds,
-    int userId);
+    Guid userId);
     }
 }

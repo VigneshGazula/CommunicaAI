@@ -73,9 +73,110 @@ namespace CommunicaAI.Services
             };
         }
 
-        public Task<SubmitAudioAnswerResponse> SubmitAudioAnswerAsync(Guid sessionId, Guid questionId, IFormFile audioFile, int durationSeconds, int userId)
+        public async Task<SubmitAudioAnswerResponse> SubmitAudioAnswerAsync(
+    Guid sessionId,
+    Guid questionId,
+    IFormFile audioFile,
+    int durationSeconds,
+    int userId)
         {
-            throw new NotImplementedException();
+            // Validate session
+            var session = await _interviewRepository.GetByIdAsync(sessionId);
+
+            if (session == null || session.UserId != userId)
+            {
+                throw new UnauthorizedAccessException(
+                    "Session not found or unauthorized.");
+            }
+
+            // Validate question
+            var question =
+                await _questionRepository.GetBySessionAndQuestionIdAsync(
+                    sessionId,
+                    questionId);
+
+            if (question == null)
+            {
+                throw new InvalidOperationException(
+                    "Question not found.");
+            }
+
+            // Check duplicate answer
+            var existing =
+                await _answerRepository.GetByQuestionIdAsync(questionId);
+
+            if (existing != null)
+            {
+                throw new InvalidOperationException(
+                    "Question already answered.");
+            }
+
+            // Upload audio to Cloudinary
+            var upload =
+                await _cloudinaryService.UploadAudioAsync(
+                    audioFile,
+                    (Guid)session.UserId);   // <-- change this if UserId is int
+
+            // Transcribe audio
+            using var stream = audioFile.OpenReadStream();
+
+            var transcript =
+                await _transcriptionService.TranscribeAsync(
+                    stream,
+                    audioFile.ContentType);
+
+            // Evaluate transcript
+            var evaluation =
+                await _geminiService.EvaluateAnswerAsync(
+                    question.QuestionText,
+                    transcript);
+
+            // Create answer
+            var answer = new InterviewAnswer
+            {
+                Id = Guid.NewGuid(),
+
+                InterviewQuestionId = questionId,
+
+                InterviewSessionId = sessionId,
+
+                Transcript = transcript,
+
+                AudioUrl = upload.Url,
+
+                DurationSeconds = durationSeconds,
+
+                AnsweredAt = DateTime.UtcNow
+            };
+
+            await _answerRepository.CreateAsync(answer);
+
+            // Mark question answered
+            question.IsAnswered = true;
+
+            await _questionRepository.UpdateAsync(question);
+
+            // TODO:
+            // Save AnswerEvaluation once AnswerEvaluationRepository exists
+
+            return new SubmitAudioAnswerResponse
+            {
+                AnswerId = answer.Id,
+
+                Transcript = transcript,
+
+                AudioUrl = upload.Url,
+
+                TechnicalScore = evaluation.TechnicalScore,
+
+                ClarityScore = evaluation.ClarityScore,
+
+                CompletenessScore = evaluation.CompletenessScore,
+
+                OverallScore = evaluation.OverallScore,
+
+                Feedback = evaluation.Feedback
+            };
         }
     }
 }

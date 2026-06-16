@@ -2,6 +2,7 @@
 using CommunicaAI.DTO.Auth;
 using CommunicaAI.Models;
 using CommunicaAI.Services;
+using CommunicaAI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

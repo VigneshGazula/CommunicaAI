@@ -2,6 +2,7 @@
 using CloudinaryDotNet.Actions;
 using CommunicaAI.Models;
 using CommunicaAI.Models.Configurations;
+using CommunicaAI.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
