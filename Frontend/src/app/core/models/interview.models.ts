@@ -127,24 +127,6 @@ export interface InterviewSession {
   currentQuestionIndex: number;
 }
 
-export interface InterviewResult {
-  sessionId: string;
-  overallScore: number;
-  communicationScore: number;
-  confidenceScore: number;
-  strengths: string[];
-  improvements: string[];
-  transcript: string;
-  setup: InterviewSetup;
-  completedAt: Date;
-}
-
-export interface InterviewStats {
-  totalInterviews: number;
-  averageScore: number;
-  currentStreak: number;
-}
-
 export interface InterviewHistoryResponse {
   sessionId: string;
   role: string;
