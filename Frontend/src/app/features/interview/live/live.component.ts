@@ -3,9 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
 import { InterviewService } from '../../../core/services/interview.service';
-import { InterviewHistoryService } from '../../../core/services/interview-history.service';
-import { SpeechTranscriptionService } from '../../../core/services/speech-transcription.service';
-import { InterviewSession, InterviewQuestion } from '../../../core/models/interview.models';
+import { InterviewSession, InterviewQuestion, SubmitAudioAnswerResponse } from '../../../core/models/interview.models';
 
 type SpeechState = 'idle' | 'ai-speaking' | 'user-turn' | 'user-recording';
 
@@ -21,8 +19,6 @@ export class LiveComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly interviewService = inject(InterviewService);
-  private readonly historyService = inject(InterviewHistoryService);
-  private readonly transcriptionService = inject(SpeechTranscriptionService);
 
   readonly session = signal<InterviewSession | null>(null);
   readonly currentQuestion = signal<InterviewQuestion | null>(null);
@@ -52,13 +48,50 @@ export class LiveComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const session = this.interviewService.getCurrentSession();
+    // Load session from memory first
+    let session = this.interviewService.getCurrentSession();
+    
     if (!session || session.id !== this.sessionId) {
-      this.router.navigate(['/dashboard']);
-      return;
+      // Session not in memory, load from backend
+      this.loading.set(true);
+      this.interviewService.loadSessionDetails(this.sessionId).subscribe({
+        next: (loadedSession) => {
+          this.session.set(loadedSession);
+          this.initializeSession();
+        },
+        error: () => {
+          this.error.set('Session not found');
+          this.router.navigate(['/dashboard']);
+        }
+      });
+    } else {
+      // Session exists in memory
+      this.session.set(session);
+      
+      // Load questions if not already loaded
+      if (session.questions.length === 0) {
+        this.loading.set(true);
+        this.interviewService.loadQuestions(this.sessionId).subscribe({
+          next: (questions) => {
+            const updatedSession = this.interviewService.getCurrentSession();
+            if (updatedSession) {
+              this.session.set(updatedSession);
+              this.initializeSession();
+            }
+          },
+          error: () => {
+            this.error.set('Failed to load questions');
+            this.loading.set(false);
+          }
+        });
+      } else {
+        this.initializeSession();
+      }
     }
+  }
 
-    this.session.set(session);
+  private initializeSession(): void {
+    this.loading.set(false);
     this.updateCurrentQuestion();
     this.startTimer();
     this.loadExistingTranscript();
@@ -206,24 +239,60 @@ export class LiveComponent implements OnInit, OnDestroy {
     if (this.audioChunks.length === 0) return;
 
     const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-    this.speechState.set('user-turn');
+    const session = this.session();
+    const question = this.currentQuestion();
 
-    // Transcribe using mock service
-    this.transcriptionService.transcribe(audioBlob).subscribe({
-      next: (result) => {
-        const newTranscript = this.currentTranscript() 
-          ? `${this.currentTranscript()} ${result.text}`
-          : result.text;
+    if (!session || !question) return;
+
+    // Calculate duration (approximate)
+    const durationSeconds = Math.floor(this.audioChunks.length / 10); // Rough estimate
+
+    this.speechState.set('user-turn');
+    this.loading.set(true);
+
+    // Submit audio to backend for transcription and evaluation
+    this.interviewService.submitAudioAnswer(
+      session.id,
+      question.id,
+      audioBlob,
+      durationSeconds
+    ).subscribe({
+      next: (response) => {
+        // Update transcript with backend response
+        this.currentTranscript.set(response.transcript);
         
-        this.currentTranscript.set(newTranscript);
-        this.saveTranscriptToSession();
+        // Show evaluation scores briefly
+        this.showEvaluationScores(response);
+        
+        // Update session state
+        const updatedSession = this.interviewService.getCurrentSession();
+        if (updatedSession) {
+          this.session.set(updatedSession);
+        }
+        
+        this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Transcription failed. Please try again.');
+      error: (err) => {
+        this.error.set('Failed to process audio. Please try again.');
+        this.loading.set(false);
+        console.error('Audio submission error:', err);
       }
     });
 
     this.releaseMediaStream();
+  }
+
+  private showEvaluationScores(response: any): void {
+    // Show a brief notification with scores
+    const message = `
+      Overall: ${response.overallScore}% | 
+      Technical: ${response.technicalScore}% | 
+      Clarity: ${response.clarityScore}%
+    `;
+    console.log('Answer Evaluation:', message);
+    
+    // You can add a toast notification here if desired
+    // For now, scores are stored in session state and visible in results
   }
 
   private releaseMediaStream(): void {
@@ -308,14 +377,14 @@ export class LiveComponent implements OnInit, OnDestroy {
     const session = this.session();
     if (!session) return;
 
-    this.interviewService.finishSession(session.id).subscribe({
-      next: (result) => {
-        this.historyService.saveSession(result).subscribe(() => {
-          this.router.navigate(['/interview/result', session.id]);
-        });
+    // Complete the interview via backend API
+    this.interviewService.completeInterview(session.id).subscribe({
+      next: () => {
+        // Navigate to results page (results will be fetched there)
+        this.router.navigate(['/interview/result', session.id]);
       },
       error: () => {
-        this.error.set('Failed to finish interview. Please try again.');
+        this.error.set('Failed to complete interview. Please try again.');
         this.loading.set(false);
       }
     });

@@ -3,7 +3,7 @@
     <div class="loading-container">
       <div class="spinner"></div>
     </div>
-  } @else if (result()) {
+  } @else if (session()) {
     <div class="result-container">
       <div class="result-header">
         <a routerLink="/dashboard" class="back-link">
@@ -13,41 +13,52 @@
           Back to Dashboard
         </a>
         <h1>Interview Results</h1>
-        <p>{{ result()!.setup.role }} • {{ result()!.setup.difficulty | titlecase }}</p>
-        <p class="result-date">{{ result()!.completedAt | date: 'MMM d, y, h:mm a' }}</p>
+        <p>{{ session()!.setup.role }} • {{ session()!.setup.difficulty | titlecase }}</p>
+        <p class="result-date">{{ session()!.completedAt | date: 'MMM d, y, h:mm a' }}</p>
       </div>
 
       <div class="score-overview">
         <div class="score-main">
-          <div class="score-circle" [style.border-color]="getScoreColor(result()!.overallScore)">
-            <span class="score-value" [style.color]="getScoreColor(result()!.overallScore)">
-              {{ result()!.overallScore }}%
+          <div class="score-circle" [style.border-color]="getScoreColor(overallScore())">
+            <span class="score-value" [style.color]="getScoreColor(overallScore())">
+              {{ overallScore() }}%
             </span>
             <span class="score-label">Overall</span>
           </div>
         </div>
         <div class="score-breakdown">
           <div class="score-item">
+            <span class="score-item-label">Technical</span>
+            <div class="score-bar">
+              <div 
+                class="score-bar-fill" 
+                [style.width.%]="technicalScore()"
+                [style.background]="getScoreColor(technicalScore())"
+              ></div>
+            </div>
+            <span class="score-item-value">{{ technicalScore() }}%</span>
+          </div>
+          <div class="score-item">
             <span class="score-item-label">Communication</span>
             <div class="score-bar">
               <div 
                 class="score-bar-fill" 
-                [style.width.%]="result()!.communicationScore"
-                [style.background]="getScoreColor(result()!.communicationScore)"
+                [style.width.%]="communicationScore()"
+                [style.background]="getScoreColor(communicationScore())"
               ></div>
             </div>
-            <span class="score-item-value">{{ result()!.communicationScore }}%</span>
+            <span class="score-item-value">{{ communicationScore() }}%</span>
           </div>
           <div class="score-item">
             <span class="score-item-label">Confidence</span>
             <div class="score-bar">
               <div 
                 class="score-bar-fill" 
-                [style.width.%]="result()!.confidenceScore"
-                [style.background]="getScoreColor(result()!.confidenceScore)"
+                [style.width.%]="confidenceScore()"
+                [style.background]="getScoreColor(confidenceScore())"
               ></div>
             </div>
-            <span class="score-item-value">{{ result()!.confidenceScore }}%</span>
+            <span class="score-item-value">{{ confidenceScore() }}%</span>
           </div>
         </div>
       </div>
@@ -60,11 +71,15 @@
             </svg>
             Strengths
           </h3>
-          <ul class="list">
-            @for (strength of result()!.strengths; track strength) {
-              <li>{{ strength }}</li>
-            }
-          </ul>
+          @if (strengths().length > 0) {
+            <ul class="list">
+              @for (strength of strengths(); track strength) {
+                <li>{{ strength }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-message">Complete answers to see strengths analysis</p>
+          }
         </div>
 
         <div class="result-card">
@@ -74,13 +89,45 @@
             </svg>
             Areas for Improvement
           </h3>
-          <ul class="list">
-            @for (improvement of result()!.improvements; track improvement) {
-              <li>{{ improvement }}</li>
+          @if (improvements().length > 0) {
+            <ul class="list">
+              @for (improvement of improvements(); track improvement) {
+                <li>{{ improvement }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-message">Complete answers to see improvement suggestions</p>
+          }
+        </div>
+      </div>
+
+      @if (recommendations().length > 0) {
+        <div class="recommendations-section">
+          <h3 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Recommendations
+          </h3>
+          <ul class="recommendations-list">
+            @for (rec of recommendations(); track rec) {
+              <li>{{ rec }}</li>
             }
           </ul>
         </div>
-      </div>
+      }
+
+      @if (summary().length > 0) {
+        <div class="summary-section">
+          <h3 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Summary
+          </h3>
+          <p class="summary-text">{{ summary() }}</p>
+        </div>
+      }
 
       <div class="transcript-section">
         <div class="transcript-header">
@@ -100,7 +147,36 @@
           </button>
         </div>
         <div class="transcript-content">
-          <pre>{{ result()!.transcript }}</pre>
+          @for (question of session()!.questions; track question.id; let i = $index) {
+            <div class="transcript-item">
+              <div class="transcript-question">
+                <span class="question-number">Q{{ i + 1 }}</span>
+                <span class="question-text">{{ question.text }}</span>
+              </div>
+              <div class="transcript-answer">
+                <span class="answer-label">A{{ i + 1 }}</span>
+                <span class="answer-text">
+                  {{ session()!.answers.find(a => a.questionId === question.id)?.text || '(No answer provided)' }}
+                </span>
+              </div>
+              @if (session()!.answers.find(a => a.questionId === question.id)?.evaluation; as evaluation) {
+                <div class="answer-scores">
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.technicalScore)">
+                    Technical: {{ evaluation.technicalScore }}%
+                  </span>
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.clarityScore)">
+                    Clarity: {{ evaluation.clarityScore }}%
+                  </span>
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.completenessScore)">
+                    Completeness: {{ evaluation.completenessScore }}%
+                  </span>
+                  <span class="score-badge overall" [style.background]="getScoreColor(evaluation.overallScore)">
+                    Overall: {{ evaluation.overallScore }}%
+                  </span>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
 

@@ -1,236 +1,301 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject, tap, map, catchError, throwError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   InterviewSetup,
   InterviewSession,
   InterviewQuestion,
   InterviewAnswer,
-  InterviewResult
+  CreateInterviewRequest,
+  CreateInterviewResponse,
+  QuestionResponse,
+  InterviewDetailResponse,
+  QuestionWithAnswerResponse,
+  SubmitAudioAnswerResponse
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
 export class InterviewService {
-  private readonly platformId = inject(PLATFORM_ID);
-  private readonly STORAGE_KEY = 'communica_current_session';
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/interviews`;
+  
+  // Store current session in memory (not localStorage)
+  private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
+  public currentSession$ = this.currentSessionSubject.asObservable();
 
-  // Mock question bank
-  private readonly questionBank: Record<string, string[]> = {
-    'Software Engineer': [
-      'Tell me about your experience with full-stack development.',
-      'How do you handle code reviews and feedback?',
-      'Describe a challenging bug you recently solved.',
-      'What is your approach to writing maintainable code?',
-      'How do you stay updated with new technologies?'
-    ],
-    'Product Manager': [
-      'How do you prioritize features in a product roadmap?',
-      'Describe a time you had to make a difficult trade-off decision.',
-      'How do you gather and validate user requirements?',
-      'What metrics do you use to measure product success?',
-      'How do you handle stakeholder disagreements?'
-    ],
-    'Data Scientist': [
-      'Explain your approach to exploratory data analysis.',
-      'How do you handle imbalanced datasets?',
-      'Describe a machine learning project you completed.',
-      'What is your process for feature engineering?',
-      'How do you communicate technical findings to non-technical stakeholders?'
-    ],
-    'Marketing Manager': [
-      'How do you measure the ROI of marketing campaigns?',
-      'Describe your experience with digital marketing channels.',
-      'How do you develop a go-to-market strategy?',
-      'What tools do you use for market research?',
-      'How do you balance brand awareness and lead generation?'
-    ]
-  };
-
+  /**
+   * Create a new interview session
+   * Calls: POST /api/interviews
+   */
   createSession(setup: InterviewSetup): Observable<InterviewSession> {
-    const session: InterviewSession = {
-      id: this.generateId(),
-      setup,
-      questions: this.generateQuestions(setup),
-      answers: [],
-      status: 'in-progress',
-      createdAt: new Date(),
-      currentQuestionIndex: 0
+    const request: CreateInterviewRequest = {
+      role: setup.role,
+      topic: setup.topic,
+      difficulty: setup.difficulty,
+      questionCount: setup.questionCount,
+      durationMinutes: setup.duration
     };
 
-    this.saveCurrentSession(session);
-    return of(session).pipe(delay(300));
+    return this.http.post<CreateInterviewResponse>(this.apiUrl, request).pipe(
+      map(response => {
+        // Transform backend response to frontend session model
+        const session: InterviewSession = {
+          id: response.sessionId,
+          setup: setup,
+          questions: [], // Will be loaded separately
+          answers: [],
+          status: 'in-progress',
+          createdAt: new Date(response.startedAt),
+          currentQuestionIndex: 0
+        };
+        
+        this.currentSessionSubject.next(session);
+        return session;
+      }),
+      catchError(error => {
+        console.error('Error creating interview session:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
+  /**
+   * Get current session from memory
+   */
   getCurrentSession(): InterviewSession | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-    if (!stored) return null;
-    
-    const session = JSON.parse(stored);
-    session.createdAt = new Date(session.createdAt);
-    session.answers = session.answers.map((a: any) => ({
-      ...a,
-      timestamp: new Date(a.timestamp)
-    }));
-    return session;
+    return this.currentSessionSubject.value;
   }
 
-  saveAnswer(sessionId: string, answer: InterviewAnswer): Observable<void> {
-    const session = this.getCurrentSession();
-    if (!session || session.id !== sessionId) {
-      throw new Error('Session not found');
-    }
-
-    // Remove existing answer for this question if any
-    session.answers = session.answers.filter(a => a.questionId !== answer.questionId);
-    session.answers.push(answer);
-    
-    this.saveCurrentSession(session);
-    return of(void 0).pipe(delay(100));
+  /**
+   * Load full interview session details
+   * Calls: GET /api/interviews/{sessionId}
+   */
+  loadSessionDetails(sessionId: string): Observable<InterviewSession> {
+    return this.http.get<InterviewDetailResponse>(`${this.apiUrl}/${sessionId}`).pipe(
+      map(response => this.mapDetailResponseToSession(response)),
+      tap(session => this.currentSessionSubject.next(session)),
+      catchError(error => {
+        console.error('Error loading session details:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
+  /**
+   * Load questions for a session
+   * Calls: GET /api/interviews/{sessionId}/questions
+   */
+  loadQuestions(sessionId: string): Observable<InterviewQuestion[]> {
+    return this.http.get<QuestionResponse[]>(`${this.apiUrl}/${sessionId}/questions`).pipe(
+      map(responses => responses.map(q => this.mapQuestionResponse(q))),
+      tap(questions => {
+        const currentSession = this.currentSessionSubject.value;
+        if (currentSession && currentSession.id === sessionId) {
+          currentSession.questions = questions;
+          this.currentSessionSubject.next({ ...currentSession });
+        }
+      }),
+      catchError(error => {
+        console.error('Error loading questions:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Save answer transcript (updates local state only)
+   * Note: Backend submission happens via InterviewAnswerController
+   */
   saveTranscript(sessionId: string, questionId: string, transcript: string): Observable<void> {
-    const session = this.getCurrentSession();
+    const session = this.currentSessionSubject.value;
+    
     if (!session || session.id !== sessionId) {
-      throw new Error('Session not found');
+      return throwError(() => new Error('Session not found'));
     }
 
-    // Find or create answer for this question
-    let answer = session.answers.find(a => a.questionId === questionId);
-    if (answer) {
-      answer.text = transcript;
-      answer.timestamp = new Date();
+    // Update or create answer in local state
+    const existingAnswerIndex = session.answers.findIndex(a => a.questionId === questionId);
+    const answer: InterviewAnswer = {
+      questionId,
+      text: transcript,
+      timestamp: new Date()
+    };
+
+    if (existingAnswerIndex >= 0) {
+      session.answers[existingAnswerIndex] = answer;
     } else {
-      answer = {
-        questionId,
-        text: transcript,
-        timestamp: new Date()
-      };
       session.answers.push(answer);
     }
+
+    // Update question's isAnswered flag
+    const question = session.questions.find(q => q.id === questionId);
+    if (question) {
+      question.isAnswered = true;
+    }
+
+    this.currentSessionSubject.next({ ...session });
     
-    this.saveCurrentSession(session);
-    return of(void 0).pipe(delay(100));
+    return new Observable(observer => {
+      observer.next();
+      observer.complete();
+    });
   }
 
+  /**
+   * Update current question index in local state
+   */
   updateQuestionIndex(sessionId: string, index: number): Observable<void> {
-    const session = this.getCurrentSession();
+    const session = this.currentSessionSubject.value;
+    
     if (!session || session.id !== sessionId) {
-      throw new Error('Session not found');
+      return throwError(() => new Error('Session not found'));
     }
 
     session.currentQuestionIndex = index;
-    this.saveCurrentSession(session);
-    return of(void 0);
+    this.currentSessionSubject.next({ ...session });
+    
+    return new Observable(observer => {
+      observer.next();
+      observer.complete();
+    });
   }
 
-  finishSession(sessionId: string): Observable<InterviewResult> {
-    const session = this.getCurrentSession();
-    if (!session || session.id !== sessionId) {
-      throw new Error('Session not found');
-    }
-
-    session.status = 'completed';
-    session.completedAt = new Date();
-    this.saveCurrentSession(session);
-
-    const result = this.computeResult(session);
-    this.clearCurrentSession();
-    
-    return of(result).pipe(delay(500));
-  }
-
-  private generateQuestions(setup: InterviewSetup): InterviewQuestion[] {
-    const baseQuestions = this.questionBank[setup.role] || this.questionBank['Software Engineer'];
-    const questions: InterviewQuestion[] = [];
-    
-    for (let i = 0; i < setup.questionCount; i++) {
-      const questionText = baseQuestions[i % baseQuestions.length];
-      questions.push({
-        id: this.generateId(),
-        text: questionText,
-        order: i + 1
-      });
-    }
-    
-    return questions;
-  }
-
-  private computeResult(session: InterviewSession): InterviewResult {
-    // Mock scoring logic
-    const answerCount = session.answers.length;
-    const totalQuestions = session.questions.length;
-    const completionRate = totalQuestions > 0 ? answerCount / totalQuestions : 0;
-
-    const avgAnswerLength = session.answers.length > 0
-      ? session.answers.reduce((sum, a) => sum + a.text.length, 0) / session.answers.length
-      : 0;
-
-    const overallScore = Math.round(
-      (completionRate * 0.5 + Math.min(avgAnswerLength / 500, 1) * 0.5) * 100
-    );
-
-    const communicationScore = Math.round(Math.min(avgAnswerLength / 400, 1) * 100);
-    const confidenceScore = Math.round((completionRate * 0.7 + Math.random() * 0.3) * 100);
-
-    const transcript = session.questions
-      .map((q, i) => {
-        const answer = session.answers.find(a => a.questionId === q.id);
-        return `Q${i + 1}: ${q.text}\n\nA${i + 1}: ${answer?.text || '(No answer provided)'}\n\n`;
+  /**
+   * Complete the interview session
+   * Calls: POST /api/interviews/{sessionId}/complete
+   */
+  completeInterview(sessionId: string): Observable<void> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/${sessionId}/complete`, {}).pipe(
+      tap(() => {
+        const session = this.currentSessionSubject.value;
+        if (session && session.id === sessionId) {
+          session.status = 'completed';
+          session.completedAt = new Date();
+          this.currentSessionSubject.next({ ...session });
+        }
+      }),
+      map(() => void 0),
+      catchError(error => {
+        console.error('Error completing interview:', error);
+        return throwError(() => error);
       })
-      .join('---\n\n');
+    );
+  }
+
+  /**
+   * Submit audio answer with transcription and evaluation
+   * Calls: POST /api/interviews/{sessionId}/answers/audio
+   */
+  submitAudioAnswer(
+    sessionId: string,
+    questionId: string,
+    audioBlob: Blob,
+    durationSeconds: number
+  ): Observable<SubmitAudioAnswerResponse> {
+    const formData = new FormData();
+    formData.append('questionId', questionId);
+    formData.append('audioFile', audioBlob, 'answer.webm');
+    formData.append('durationSeconds', durationSeconds.toString());
+
+    return this.http.post<SubmitAudioAnswerResponse>(
+      `${this.apiUrl}/${sessionId}/answers/audio`,
+      formData
+    ).pipe(
+      tap(response => {
+        // Update local session state with answer
+        const session = this.currentSessionSubject.value;
+        if (session && session.id === sessionId) {
+          // Remove existing answer for this question
+          session.answers = session.answers.filter(a => a.questionId !== questionId);
+          
+          // Add new answer with evaluation
+          const answer: InterviewAnswer = {
+            questionId,
+            text: response.transcript,
+            timestamp: new Date(),
+            audioUrl: response.audioUrl,
+            evaluation: {
+              technicalScore: response.technicalScore,
+              clarityScore: response.clarityScore,
+              completenessScore: response.completenessScore,
+              overallScore: response.overallScore,
+              strengths: response.strengths,
+              improvements: response.improvements,
+              feedback: response.feedback
+            }
+          };
+          session.answers.push(answer);
+
+          // Mark question as answered
+          const question = session.questions.find(q => q.id === questionId);
+          if (question) {
+            question.isAnswered = true;
+          }
+
+          this.currentSessionSubject.next({ ...session });
+        }
+      }),
+      catchError(error => {
+        console.error('Error submitting audio answer:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Clear current session from memory
+   */
+  clearCurrentSession(): void {
+    this.currentSessionSubject.next(null);
+  }
+
+  // Helper method to map backend response to frontend model
+  private mapDetailResponseToSession(response: InterviewDetailResponse): InterviewSession {
+    const questions = response.questions.map(q => this.mapQuestionWithAnswer(q));
+    const answers = response.questions
+      .filter(q => q.answer !== null)
+      .map(q => ({
+        questionId: q.id,
+        text: q.answer!.transcript,
+        timestamp: new Date(q.answer!.answeredAt)
+      }));
 
     return {
-      sessionId: session.id,
-      overallScore,
-      communicationScore,
-      confidenceScore,
-      strengths: this.generateStrengths(overallScore),
-      improvements: this.generateImprovements(overallScore),
-      transcript,
-      setup: session.setup,
-      completedAt: session.completedAt || new Date()
+      id: response.sessionId,
+      setup: {
+        role: response.role,
+        topic: response.topic,
+        difficulty: response.difficulty as 'easy' | 'medium' | 'hard',
+        duration: response.durationMinutes,
+        questionCount: response.questionCount
+      },
+      questions,
+      answers,
+      status: response.status.toLowerCase() as 'draft' | 'in-progress' | 'completed',
+      createdAt: new Date(response.startedAt),
+      completedAt: response.completedAt ? new Date(response.completedAt) : undefined,
+      currentQuestionIndex: 0
     };
   }
 
-  private generateStrengths(score: number): string[] {
-    const allStrengths = [
-      'Clear and concise communication',
-      'Strong technical knowledge',
-      'Good problem-solving approach',
-      'Confident delivery',
-      'Well-structured responses'
-    ];
-
-    const count = score >= 80 ? 4 : score >= 60 ? 3 : 2;
-    return allStrengths.slice(0, count);
+  private mapQuestionResponse(q: QuestionResponse): InterviewQuestion {
+    return {
+      id: q.id,
+      text: q.questionText,
+      order: q.orderNumber,
+      category: q.category,
+      isAnswered: q.isAnswered
+    };
   }
 
-  private generateImprovements(score: number): string[] {
-    const allImprovements = [
-      'Provide more specific examples',
-      'Expand on technical details',
-      'Practice articulating thought process',
-      'Work on answer structure',
-      'Improve time management'
-    ];
-
-    const count = score < 50 ? 3 : score < 70 ? 2 : 1;
-    return allImprovements.slice(0, count);
-  }
-
-  private saveCurrentSession(session: InterviewSession): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(session));
-  }
-
-  private clearCurrentSession(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    localStorage.removeItem(this.STORAGE_KEY);
-  }
-
-  private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private mapQuestionWithAnswer(q: QuestionWithAnswerResponse): InterviewQuestion {
+    return {
+      id: q.id,
+      text: q.questionText,
+      order: q.orderNumber,
+      category: q.category,
+      isAnswered: q.isAnswered
+    };
   }
 }
