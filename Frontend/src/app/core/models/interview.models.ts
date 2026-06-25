@@ -144,3 +144,13 @@ export interface InterviewStats {
   averageScore: number;
   currentStreak: number;
 }
+
+export interface InterviewHistoryResponse {
+  sessionId: string;
+  role: string;
+  difficulty: string;
+  startedAt: string;
+  completedAt: string | null;
+  status: string;
+  completionPercentage: number | null;
+}

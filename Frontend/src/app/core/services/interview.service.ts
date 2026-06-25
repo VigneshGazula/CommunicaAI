@@ -12,7 +12,8 @@ import {
   QuestionResponse,
   InterviewDetailResponse,
   QuestionWithAnswerResponse,
-  SubmitAudioAnswerResponse
+  SubmitAudioAnswerResponse,
+  InterviewHistoryResponse
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
@@ -248,6 +249,19 @@ export class InterviewService {
    */
   clearCurrentSession(): void {
     this.currentSessionSubject.next(null);
+  }
+
+  /**
+   * Get user's interview history
+   * Calls: GET /api/interviews/my-history
+   */
+  getUserHistory(): Observable<InterviewHistoryResponse[]> {
+    return this.http.get<InterviewHistoryResponse[]>(`${this.apiUrl}/my-history`).pipe(
+      catchError(error => {
+        console.error('Error loading interview history:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // Helper method to map backend response to frontend model

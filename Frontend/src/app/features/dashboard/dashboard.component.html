@@ -25,15 +25,15 @@
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-value">{{ stats()?.totalInterviews || 0 }}</div>
+          <div class="stat-value">{{ totalInterviews() }}</div>
           <div class="stat-label">Interviews</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">{{ stats()?.averageScore || 0 }}%</div>
+          <div class="stat-value">{{ averageScore() }}%</div>
           <div class="stat-label">Avg Score</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">{{ stats()?.currentStreak || 0 }}</div>
+          <div class="stat-value">{{ currentStreak() }}</div>
           <div class="stat-label">Day Streak</div>
         </div>
       </div>
@@ -48,13 +48,11 @@
             @for (session of recentSessions(); track session.sessionId) {
               <a [routerLink]="['/interview/result', session.sessionId]" class="session-card">
                 <div class="session-header">
-                  <span class="session-role">{{ session.setup.role }}</span>
-                  <span class="session-score">{{ session.overallScore }}%</span>
+                  <span class="session-role">{{ session.role }}</span>
+                  <span class="session-score">{{ session.completionPercentage }}%</span>
                 </div>
                 <div class="session-meta">
-                  <span>{{ session.setup.difficulty | titlecase }}</span>
-                  <span>•</span>
-                  <span>{{ session.setup.questionCount }} questions</span>
+                  <span>{{ session.difficulty | titlecase }}</span>
                 </div>
                 <div class="session-date">
                   {{ session.completedAt | date: 'MMM d, y' }}
