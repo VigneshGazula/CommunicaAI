@@ -231,7 +231,73 @@ namespace CommunicaAI.Services
                 new() { Role = "Data Scientist", Category = "HR", Difficulty = "Easy", QuestionText = "Why do you want to be a data scientist?" },
                 new() { Role = "DevOps Engineer", Category = "HR", Difficulty = "Easy", QuestionText = "What motivates you in DevOps work?" },
                 new() { Role = "Cloud Engineer", Category = "HR", Difficulty = "Easy", QuestionText = "Why are you interested in cloud engineering?" },
-                new() { Role = "Machine Learning Engineer", Category = "HR", Difficulty = "Easy", QuestionText = "What excites you about machine learning?" }
+                new() { Role = "Machine Learning Engineer", Category = "HR", Difficulty = "Easy", QuestionText = "What excites you about machine learning?" },
+
+                // Product Manager - Technical - Medium
+                new() { Role = "Product Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you prioritize features in a product roadmap?" },
+                new() { Role = "Product Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain your approach to product discovery." },
+                new() { Role = "Product Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you measure product success?" },
+                new() { Role = "Product Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "What frameworks do you use for product strategy?" },
+                new() { Role = "Product Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you work with engineering teams?" },
+                new() { Role = "Product Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Tell me about a product you launched successfully." },
+                new() { Role = "Product Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you handle conflicting stakeholder requirements?" },
+                new() { Role = "Product Manager", Category = "HR", Difficulty = "Easy", QuestionText = "What attracts you to product management?" },
+                new() { Role = "Product Manager", Category = "HR", Difficulty = "Easy", QuestionText = "How do you stay updated with market trends?" },
+
+                // Marketing Manager - Technical - Medium
+                new() { Role = "Marketing Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you develop a marketing strategy?" },
+                new() { Role = "Marketing Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "What metrics do you use to measure campaign success?" },
+                new() { Role = "Marketing Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain your approach to digital marketing." },
+                new() { Role = "Marketing Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you identify target audiences?" },
+                new() { Role = "Marketing Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "What tools do you use for marketing analytics?" },
+                new() { Role = "Marketing Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Describe a successful marketing campaign you led." },
+                new() { Role = "Marketing Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you handle budget constraints?" },
+                new() { Role = "Marketing Manager", Category = "HR", Difficulty = "Easy", QuestionText = "Why do you want to work in marketing?" },
+                new() { Role = "Marketing Manager", Category = "HR", Difficulty = "Easy", QuestionText = "What marketing trends excite you most?" },
+
+                // UX Designer - Technical - Medium
+                new() { Role = "UX Designer", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain your UX design process." },
+                new() { Role = "UX Designer", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you conduct user research?" },
+                new() { Role = "UX Designer", Category = "Technical", Difficulty = "Medium", QuestionText = "What is your approach to creating user personas?" },
+                new() { Role = "UX Designer", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you measure UX success?" },
+                new() { Role = "UX Designer", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain the difference between UX and UI design." },
+                new() { Role = "UX Designer", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Tell me about a design challenge you solved." },
+                new() { Role = "UX Designer", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you handle feedback on your designs?" },
+                new() { Role = "UX Designer", Category = "HR", Difficulty = "Easy", QuestionText = "What inspired you to become a UX designer?" },
+                new() { Role = "UX Designer", Category = "HR", Difficulty = "Easy", QuestionText = "What design tools do you prefer and why?" },
+
+                // Business Analyst - Technical - Medium
+                new() { Role = "Business Analyst", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you gather business requirements?" },
+                new() { Role = "Business Analyst", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain your approach to business process analysis." },
+                new() { Role = "Business Analyst", Category = "Technical", Difficulty = "Medium", QuestionText = "What tools do you use for data analysis?" },
+                new() { Role = "Business Analyst", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you create business cases?" },
+                new() { Role = "Business Analyst", Category = "Technical", Difficulty = "Medium", QuestionText = "Describe your experience with stakeholder management." },
+                new() { Role = "Business Analyst", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Tell me about a business problem you helped solve." },
+                new() { Role = "Business Analyst", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you handle ambiguous requirements?" },
+                new() { Role = "Business Analyst", Category = "HR", Difficulty = "Easy", QuestionText = "Why did you choose business analysis?" },
+                new() { Role = "Business Analyst", Category = "HR", Difficulty = "Easy", QuestionText = "What aspects of business analysis do you enjoy most?" },
+
+                // Sales Executive - Technical - Medium
+                new() { Role = "Sales Executive", Category = "Technical", Difficulty = "Medium", QuestionText = "Describe your sales process." },
+                new() { Role = "Sales Executive", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you qualify leads?" },
+                new() { Role = "Sales Executive", Category = "Technical", Difficulty = "Medium", QuestionText = "What CRM tools have you used?" },
+                new() { Role = "Sales Executive", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you handle objections?" },
+                new() { Role = "Sales Executive", Category = "Technical", Difficulty = "Medium", QuestionText = "Explain your approach to closing deals." },
+                new() { Role = "Sales Executive", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Tell me about your biggest sales achievement." },
+                new() { Role = "Sales Executive", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you handle rejection?" },
+                new() { Role = "Sales Executive", Category = "HR", Difficulty = "Easy", QuestionText = "What motivates you in sales?" },
+                new() { Role = "Sales Executive", Category = "HR", Difficulty = "Easy", QuestionText = "Why do you want to work in sales?" },
+
+                // Customer Success Manager - Technical - Medium
+                new() { Role = "Customer Success Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you ensure customer satisfaction?" },
+                new() { Role = "Customer Success Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "Describe your approach to onboarding new customers." },
+                new() { Role = "Customer Success Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you measure customer success?" },
+                new() { Role = "Customer Success Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "What strategies do you use to reduce churn?" },
+                new() { Role = "Customer Success Manager", Category = "Technical", Difficulty = "Medium", QuestionText = "How do you handle escalations?" },
+                new() { Role = "Customer Success Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "Tell me about a time you turned around a dissatisfied customer." },
+                new() { Role = "Customer Success Manager", Category = "Behavioral", Difficulty = "Medium", QuestionText = "How do you build relationships with customers?" },
+                new() { Role = "Customer Success Manager", Category = "HR", Difficulty = "Easy", QuestionText = "Why are you interested in customer success?" },
+                new() { Role = "Customer Success Manager", Category = "HR", Difficulty = "Easy", QuestionText = "What do you enjoy about helping customers?" }
             };
         }
     }

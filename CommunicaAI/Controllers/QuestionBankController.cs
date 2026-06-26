@@ -63,6 +63,7 @@ namespace CommunicaAI.Controllers
         }
 
         [HttpPost("seed")]
+        [AllowAnonymous]
         public async Task<IActionResult> SeedQuestions()
         {
             await _questionBankService.SeedQuestionsAsync();
