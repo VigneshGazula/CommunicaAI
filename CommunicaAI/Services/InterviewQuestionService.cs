@@ -35,6 +35,12 @@ namespace CommunicaAI.Services
 
         public async Task GenerateQuestionsForSessionAsync(Guid sessionId, string role, string difficulty, int questionCount)
         {
+            Console.WriteLine("========== QUESTION GENERATION ==========");
+            Console.WriteLine($"SessionId   : {sessionId}");
+            Console.WriteLine($"Role        : {role}");
+            Console.WriteLine($"Difficulty  : {difficulty}");
+            Console.WriteLine($"QuestionCnt : {questionCount}");
+
             var technicalCount = (int)Math.Ceiling(questionCount * 0.6);
             var behavioralCount = (int)Math.Ceiling(questionCount * 0.2);
             var hrCount = questionCount - technicalCount - behavioralCount;
@@ -48,6 +54,7 @@ namespace CommunicaAI.Services
                 questions.Add(question);
                 orderNumber++;
             }
+            Console.WriteLine($"Technical Found : {technicalQuestions.Count}");
 
             var behavioralQuestions = await GetRandomQuestionsAsync(role, difficulty, "Behavioral", behavioralCount);
             foreach (var question in CreateInterviewQuestions(sessionId, behavioralQuestions, orderNumber))
@@ -55,6 +62,7 @@ namespace CommunicaAI.Services
                 questions.Add(question);
                 orderNumber++;
             }
+            Console.WriteLine($"Behavioral Found : {behavioralQuestions.Count}");
 
             var hrQuestions = await GetRandomQuestionsAsync(role, difficulty, "HR", hrCount);
             foreach (var question in CreateInterviewQuestions(sessionId, hrQuestions, orderNumber))
@@ -62,6 +70,7 @@ namespace CommunicaAI.Services
                 questions.Add(question);
                 orderNumber++;
             }
+            Console.WriteLine($"HR Found : {hrQuestions.Count}");
 
             if (questions.Count < questionCount)
             {
@@ -73,8 +82,11 @@ namespace CommunicaAI.Services
                     orderNumber++;
                 }
             }
+            Console.WriteLine($"InterviewQuestions Created : {questions.Count}");
 
             await _questionRepository.CreateRangeAsync(questions);
+
+            Console.WriteLine("Questions saved successfully.");
         }
 
         private async Task<List<QuestionBank>> GetRandomQuestionsAsync(string role, string difficulty, string? category, int count)
