@@ -12,58 +12,66 @@
     </div>
 
     <form [formGroup]="setupForm" (ngSubmit)="submit()" class="setup-form">
+      @if (metadataError()) {
+        <div class="alert alert-error">{{ metadataError() }}</div>
+      }
+      
       @if (error()) {
         <div class="alert alert-error">{{ error() }}</div>
       }
 
-      <div class="field">
-        <label for="role">Role / Job Title</label>
-        <select id="role" formControlName="role">
-          @for (role of roles; track role) {
-            <option [value]="role">{{ role }}</option>
+      @if (metadataLoading()) {
+        <div class="loading-message">Loading interview options...</div>
+      } @else {
+        <div class="field">
+          <label for="role">Role / Job Title</label>
+          <select id="role" formControlName="role">
+            @for (role of roles(); track role) {
+              <option [value]="role">{{ role }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="topic">Interview Topic</label>
+          <input type="text" id="topic" formControlName="topic" placeholder="e.g., Technical Interview, Behavioral Round" />
+        </div>
+
+        <div class="field">
+          <label for="difficulty">Difficulty Level</label>
+          <select id="difficulty" formControlName="difficulty">
+            @for (diff of difficulties(); track diff) {
+              <option [value]="diff.toLowerCase()">{{ diff }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="duration">Duration (minutes)</label>
+          <input type="number" id="duration" formControlName="duration" min="5" max="60" />
+          @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['min']) {
+            <span class="field-error">Duration must be at least 5 minutes</span>
           }
-        </select>
-      </div>
+          @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['max']) {
+            <span class="field-error">Duration cannot exceed 60 minutes</span>
+          }
+        </div>
 
-      <div class="field">
-        <label for="topic">Interview Topic</label>
-        <input type="text" id="topic" formControlName="topic" placeholder="e.g., Technical Interview, Behavioral Round" />
-      </div>
+        <div class="field">
+          <label for="questionCount">Number of Questions</label>
+          <input type="number" id="questionCount" formControlName="questionCount" min="1" max="20" />
+          @if (setupForm.controls.questionCount.touched && setupForm.controls.questionCount.errors?.['min']) {
+            <span class="field-error">At least 1 question required</span>
+          }
+          @if (setupForm.controls.questionCount.touched && setupForm.controls.questionCount.errors?.['max']) {
+            <span class="field-error">Maximum 20 questions allowed</span>
+          }
+        </div>
 
-      <div class="field">
-        <label for="difficulty">Difficulty Level</label>
-        <select id="difficulty" formControlName="difficulty">
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="duration">Duration (minutes)</label>
-        <input type="number" id="duration" formControlName="duration" min="5" max="60" />
-        @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['min']) {
-          <span class="field-error">Duration must be at least 5 minutes</span>
-        }
-        @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['max']) {
-          <span class="field-error">Duration cannot exceed 60 minutes</span>
-        }
-      </div>
-
-      <div class="field">
-        <label for="questionCount">Number of Questions</label>
-        <input type="number" id="questionCount" formControlName="questionCount" min="1" max="20" />
-        @if (setupForm.controls.questionCount.touched && setupForm.controls.questionCount.errors?.['min']) {
-          <span class="field-error">At least 1 question required</span>
-        }
-        @if (setupForm.controls.questionCount.touched && setupForm.controls.questionCount.errors?.['max']) {
-          <span class="field-error">Maximum 20 questions allowed</span>
-        }
-      </div>
-
-      <button type="submit" class="btn-primary" [disabled]="loading()">
-        {{ loading() ? 'Creating...' : 'Start Interview' }}
-      </button>
+        <button type="submit" class="btn-primary" [disabled]="loading() || metadataError() !== ''">
+          {{ loading() ? 'Creating...' : 'Start Interview' }}
+        </button>
+      }
     </form>
   </div>
 </div>

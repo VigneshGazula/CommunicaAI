@@ -9,5 +9,6 @@ namespace CommunicaAI.Services.Interfaces
         Task<List<QuestionBankResponse>> GetAllQuestionsAsync();
         Task<bool> DeleteQuestionAsync(Guid id);
         Task SeedQuestionsAsync();
+        Task<InterviewMetadataResponse> GetMetadataAsync();
     }
 }

@@ -11,5 +11,8 @@ namespace CommunicaAI.Repositories.Interfaces
         Task<List<QuestionBank>> GetByRoleDifficultyAndCategoryAsync(string role, string difficulty, string category);
         Task UpdateAsync(QuestionBank question);
         Task DeleteAsync(Guid id);
+        Task<List<string>> GetDistinctRolesAsync();
+        Task<List<string>> GetDistinctDifficultiesAsync();
+        Task<List<string>> GetDistinctCategoriesAsync();
     }
 }

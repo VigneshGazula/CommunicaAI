@@ -13,13 +13,15 @@ import {
   InterviewDetailResponse,
   QuestionWithAnswerResponse,
   SubmitAudioAnswerResponse,
-  InterviewHistoryResponse
+  InterviewHistoryResponse,
+  InterviewMetadata
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
 export class InterviewService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiBaseUrl}/api/interviews`;
+  private readonly questionBankUrl = `${environment.apiBaseUrl}/api/question-bank`;
   
   // Store current session in memory (not localStorage)
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
@@ -259,6 +261,19 @@ export class InterviewService {
     return this.http.get<InterviewHistoryResponse[]>(`${this.apiUrl}/my-history`).pipe(
       catchError(error => {
         console.error('Error loading interview history:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get interview metadata (roles, difficulties, categories)
+   * Calls: GET /api/question-bank/metadata
+   */
+  getMetadata(): Observable<InterviewMetadata> {
+    return this.http.get<InterviewMetadata>(`${this.questionBankUrl}/metadata`).pipe(
+      catchError(error => {
+        console.error('Error loading interview metadata:', error);
         return throwError(() => error);
       })
     );

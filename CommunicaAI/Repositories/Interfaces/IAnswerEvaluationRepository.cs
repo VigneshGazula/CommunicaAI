@@ -7,4 +7,6 @@ public interface IAnswerEvaluationRepository
 
     Task<AnswerEvaluation> CreateAsync(
         AnswerEvaluation evaluation);
+    
+    Task DeleteAsync(Guid id);
 }

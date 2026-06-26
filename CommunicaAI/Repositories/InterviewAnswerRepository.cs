@@ -34,5 +34,11 @@ namespace CommunicaAI.Repositories
                 .OrderBy(a => a.AnsweredAt)
                 .ToListAsync();
         }
+
+        public async Task UpdateAsync(InterviewAnswer answer)
+        {
+            _context.InterviewAnswers.Update(answer);
+            await _context.SaveChangesAsync();
+        }
     }
 }

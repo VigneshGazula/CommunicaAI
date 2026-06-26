@@ -63,6 +63,20 @@ namespace CommunicaAI.Services
             }
         }
 
+        public async Task<InterviewMetadataResponse> GetMetadataAsync()
+        {
+            var roles = await _repository.GetDistinctRolesAsync();
+            var difficulties = await _repository.GetDistinctDifficultiesAsync();
+            var categories = await _repository.GetDistinctCategoriesAsync();
+
+            return new InterviewMetadataResponse
+            {
+                Roles = roles,
+                Difficulties = difficulties,
+                Categories = categories
+            };
+        }
+
         private static QuestionBankResponse MapToResponse(QuestionBank question)
         {
             return new QuestionBankResponse

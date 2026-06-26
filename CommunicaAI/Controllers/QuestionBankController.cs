@@ -69,5 +69,13 @@ namespace CommunicaAI.Controllers
             await _questionBankService.SeedQuestionsAsync();
             return Ok(new { message = "Questions seeded successfully" });
         }
+
+        [HttpGet("metadata")]
+        [AllowAnonymous]
+        public async Task<ActionResult<InterviewMetadataResponse>> GetMetadata()
+        {
+            var metadata = await _questionBankService.GetMetadataAsync();
+            return Ok(metadata);
+        }
     }
 }

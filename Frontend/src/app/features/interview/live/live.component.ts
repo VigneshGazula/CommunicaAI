@@ -201,17 +201,36 @@ export class LiveComponent implements OnInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Release any existing stream first
+      this.releaseMediaStream();
+      
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
       this.audioChunks = [];
 
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+      // Try multiple MIME types for better compatibility
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Use default
+          }
+        }
+      }
 
-      this.mediaRecorder = new MediaRecorder(this.mediaStream, { mimeType });
+      const options = mimeType ? { mimeType } : {};
+      this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
 
       this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           this.audioChunks.push(event.data);
         }
       };
@@ -220,23 +239,59 @@ export class LiveComponent implements OnInit, OnDestroy {
         this.processRecording();
       };
 
-      this.mediaRecorder.start();
+      this.mediaRecorder.onerror = (event: any) => {
+        console.error('MediaRecorder error:', event);
+        this.error.set('Recording error occurred. Please try again.');
+        this.speechState.set('user-turn');
+        this.releaseMediaStream();
+      };
+
+      this.mediaRecorder.start(100); // Collect data every 100ms
       this.speechState.set('user-recording');
       this.error.set('');
-    } catch (err) {
-      this.error.set('Could not access microphone. Please check permissions.');
+    } catch (err: any) {
+      console.error('Microphone access error:', err);
+      let errorMessage = 'Could not access microphone. ';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMessage += 'Please allow microphone permissions.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage += 'No microphone found.';
+      } else if (err.name === 'NotReadableError') {
+        errorMessage += 'Microphone is being used by another application.';
+      } else {
+        errorMessage += 'Please check your settings and try again.';
+      }
+      
+      this.error.set(errorMessage);
       this.speechState.set('user-turn');
+      this.releaseMediaStream();
     }
   }
 
   stopRecording(): void {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (err) {
+        console.error('Error stopping recorder:', err);
+        this.processRecording(); // Try to process anyway
+      }
+    } else if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+      // Already stopped, process if we have chunks
+      if (this.audioChunks.length > 0) {
+        this.processRecording();
+      }
     }
   }
 
   private processRecording(): void {
-    if (this.audioChunks.length === 0) return;
+    if (this.audioChunks.length === 0) {
+      this.error.set('No audio recorded. Please try again.');
+      this.speechState.set('user-turn');
+      this.releaseMediaStream();
+      return;
+    }
 
     const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
     const session = this.session();
@@ -245,12 +300,13 @@ export class LiveComponent implements OnInit, OnDestroy {
     if (!session || !question) return;
 
     // Calculate duration (approximate)
-    const durationSeconds = Math.floor(this.audioChunks.length / 10); // Rough estimate
+    const durationSeconds = Math.max(1, Math.floor(this.audioChunks.length / 10));
 
+    // Show transcribing state
+    this.currentTranscript.set('Transcribing...');
     this.speechState.set('user-turn');
-    this.loading.set(true);
 
-    // Submit audio to backend for transcription and evaluation
+    // Submit audio to backend for transcription ONLY (no evaluation)
     this.interviewService.submitAudioAnswer(
       session.id,
       question.id,
@@ -258,48 +314,35 @@ export class LiveComponent implements OnInit, OnDestroy {
       durationSeconds
     ).subscribe({
       next: (response) => {
-        // Update transcript with backend response
+        // Show transcript immediately
         this.currentTranscript.set(response.transcript);
-        
-        // Show evaluation scores briefly
-        this.showEvaluationScores(response);
         
         // Update session state
         const updatedSession = this.interviewService.getCurrentSession();
         if (updatedSession) {
           this.session.set(updatedSession);
         }
-        
-        this.loading.set(false);
       },
       error: (err) => {
-        this.error.set('Failed to process audio. Please try again.');
-        this.loading.set(false);
+        this.currentTranscript.set('');
+        this.error.set('Failed to transcribe audio. Please try recording again.');
         console.error('Audio submission error:', err);
       }
     });
 
     this.releaseMediaStream();
-  }
-
-  private showEvaluationScores(response: any): void {
-    // Show a brief notification with scores
-    const message = `
-      Overall: ${response.overallScore}% | 
-      Technical: ${response.technicalScore}% | 
-      Clarity: ${response.clarityScore}%
-    `;
-    console.log('Answer Evaluation:', message);
-    
-    // You can add a toast notification here if desired
-    // For now, scores are stored in session state and visible in results
+    this.audioChunks = [];
   }
 
   private releaseMediaStream(): void {
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
       this.mediaStream = undefined;
     }
+    this.mediaRecorder = undefined;
   }
 
   private saveTranscriptToSession(): void {
@@ -373,17 +416,20 @@ export class LiveComponent implements OnInit, OnDestroy {
     this.stopSpeaking();
     this.stopRecording();
     this.loading.set(true);
+    this.error.set('');
 
     const session = this.session();
     if (!session) return;
 
     // Complete the interview via backend API
+    // Backend will evaluate all answers in batch and generate results
     this.interviewService.completeInterview(session.id).subscribe({
       next: () => {
         // Navigate to results page (results will be fetched there)
         this.router.navigate(['/interview/result', session.id]);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to complete interview:', err);
         this.error.set('Failed to complete interview. Please try again.');
         this.loading.set(false);
       }

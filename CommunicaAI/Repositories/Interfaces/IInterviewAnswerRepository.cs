@@ -7,5 +7,6 @@ namespace CommunicaAI.Repositories.Interfaces
         Task<InterviewAnswer> CreateAsync(InterviewAnswer answer);
         Task<InterviewAnswer?> GetByQuestionIdAsync(Guid questionId);
         Task<List<InterviewAnswer>> GetBySessionIdAsync(Guid sessionId);
+        Task UpdateAsync(InterviewAnswer answer);
     }
 }

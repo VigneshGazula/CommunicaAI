@@ -110,17 +110,27 @@ namespace CommunicaAI.Services
 
             if (existing != null)
             {
-                throw new InvalidOperationException(
-                    "Question already answered.");
+                // Update existing answer instead of throwing error
+                existing.AudioUrl = null; // Will be updated below
+                existing.Transcript = ""; // Will be updated below
+                existing.AnsweredAt = DateTime.UtcNow;
+                await _answerRepository.UpdateAsync(existing);
+                
+                // Delete old evaluation if exists
+                var oldEval = await _answerEvaluationRepository.GetByAnswerIdAsync(existing.Id);
+                if (oldEval != null)
+                {
+                    await _answerEvaluationRepository.DeleteAsync(oldEval.Id);
+                }
             }
 
             // Upload audio to Cloudinary
             var upload =
                 await _cloudinaryService.UploadAudioAsync(
                     audioFile,
-                    (Guid)session.UserId);   // <-- change this if UserId is int
+                    (Guid)session.UserId);
 
-            // Transcribe audio
+            // Transcribe audio ONLY (no evaluation yet)
             using var stream = audioFile.OpenReadStream();
 
             var transcript =
@@ -128,73 +138,46 @@ namespace CommunicaAI.Services
                     stream,
                     audioFile.ContentType);
 
-            // Evaluate transcript
-            var evaluation =
-                await _geminiService.EvaluateAnswerAsync(
-                    question.QuestionText,
-                    transcript);
-
-            // Create answer
-            var answer = new InterviewAnswer
+            // Create or update answer (transcription only, no evaluation)
+            InterviewAnswer answer;
+            if (existing != null)
             {
-                Id = Guid.NewGuid(),
-
-                InterviewQuestionId = questionId,
-
-                InterviewSessionId = sessionId,
-
-                Transcript = transcript,
-
-                AudioUrl = upload.Url,
-
-                DurationSeconds = durationSeconds,
-
-                AnsweredAt = DateTime.UtcNow
-            };
-
-            await _answerRepository.CreateAsync(answer);
-
-            var answerEvaluation = new AnswerEvaluation
+                answer = existing;
+                answer.Transcript = transcript;
+                answer.AudioUrl = upload.Url;
+                answer.DurationSeconds = durationSeconds;
+                await _answerRepository.UpdateAsync(answer);
+            }
+            else
             {
-                Id = Guid.NewGuid(),
-                InterviewAnswerId = answer.Id,
-                TechnicalScore = evaluation.TechnicalScore,
-                ClarityScore = evaluation.ClarityScore,
-                CompletenessScore = evaluation.CompletenessScore,
-                OverallScore = evaluation.OverallScore,
-                Strengths = evaluation.Strengths,
-                Improvements = evaluation.Improvements,
-                Feedback = evaluation.Feedback,
-                EvaluatedAt = DateTime.UtcNow
-            };
-
-            await _answerEvaluationRepository.CreateAsync(answerEvaluation);
+                answer = new InterviewAnswer
+                {
+                    Id = Guid.NewGuid(),
+                    InterviewQuestionId = questionId,
+                    InterviewSessionId = sessionId,
+                    Transcript = transcript,
+                    AudioUrl = upload.Url,
+                    DurationSeconds = durationSeconds,
+                    AnsweredAt = DateTime.UtcNow
+                };
+                await _answerRepository.CreateAsync(answer);
+            }
 
             // Mark question answered
             question.IsAnswered = true;
-
             await _questionRepository.UpdateAsync(question);
 
-            // TODO:
-            // Save AnswerEvaluation once AnswerEvaluationRepository exists
-
+            // Return transcript only (no evaluation scores)
             return new SubmitAudioAnswerResponse
             {
                 AnswerId = answer.Id,
-
                 Transcript = transcript,
-
                 AudioUrl = upload.Url,
-
-                TechnicalScore = evaluation.TechnicalScore,
-
-                ClarityScore = evaluation.ClarityScore,
-
-                CompletenessScore = evaluation.CompletenessScore,
-
-                OverallScore = evaluation.OverallScore,
-
-                Feedback = evaluation.Feedback
+                TechnicalScore = 0,
+                ClarityScore = 0,
+                CompletenessScore = 0,
+                OverallScore = 0,
+                Feedback = "Answer recorded. Evaluation will be performed after interview completion."
             };
         }
     }

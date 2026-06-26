@@ -136,3 +136,10 @@ export interface InterviewHistoryResponse {
   status: string;
   completionPercentage: number | null;
 }
+
+// Interview metadata from backend
+export interface InterviewMetadata {
+  roles: string[];
+  difficulties: string[];
+  categories: string[];
+}

@@ -31,4 +31,14 @@ public class AnswerEvaluationRepository : IAnswerEvaluationRepository
             .FirstOrDefaultAsync(x =>
                 x.InterviewAnswerId == answerId);
     }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var evaluation = await _context.AnswerEvaluations.FindAsync(id);
+        if (evaluation != null)
+        {
+            _context.AnswerEvaluations.Remove(evaluation);
+            await _context.SaveChangesAsync();
+        }
+    }
 }

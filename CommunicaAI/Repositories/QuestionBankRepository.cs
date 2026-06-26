@@ -36,15 +36,25 @@ namespace CommunicaAI.Repositories
 
         public async Task<List<QuestionBank>> GetByRoleAndDifficultyAsync(string role, string difficulty)
         {
+            var normalizedRole = role.Trim();
+            var normalizedDifficulty = difficulty.Trim();
+            
             return await _context.QuestionBanks
-                .Where(q => q.Role == role && q.Difficulty == difficulty)
+                .Where(q => q.Role.ToLower() == normalizedRole.ToLower() && 
+                           q.Difficulty.ToLower() == normalizedDifficulty.ToLower())
                 .ToListAsync();
         }
 
         public async Task<List<QuestionBank>> GetByRoleDifficultyAndCategoryAsync(string role, string difficulty, string category)
         {
+            var normalizedRole = role.Trim();
+            var normalizedDifficulty = difficulty.Trim();
+            var normalizedCategory = category.Trim();
+            
             return await _context.QuestionBanks
-                .Where(q => q.Role == role && q.Difficulty == difficulty && q.Category == category)
+                .Where(q => q.Role.ToLower() == normalizedRole.ToLower() && 
+                           q.Difficulty.ToLower() == normalizedDifficulty.ToLower() && 
+                           q.Category.ToLower() == normalizedCategory.ToLower())
                 .ToListAsync();
         }
 
@@ -62,6 +72,33 @@ namespace CommunicaAI.Repositories
                 _context.QuestionBanks.Remove(question);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<List<string>> GetDistinctRolesAsync()
+        {
+            return await _context.QuestionBanks
+                .Select(q => q.Role)
+                .Distinct()
+                .OrderBy(r => r)
+                .ToListAsync();
+        }
+
+        public async Task<List<string>> GetDistinctDifficultiesAsync()
+        {
+            return await _context.QuestionBanks
+                .Select(q => q.Difficulty)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+        }
+
+        public async Task<List<string>> GetDistinctCategoriesAsync()
+        {
+            return await _context.QuestionBanks
+                .Select(q => q.Category)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
         }
     }
 }

@@ -31,5 +31,13 @@ namespace CommunicaAI.DTO.Interview
         public int AnsweredQuestions { get; set; }
         public double CompletionPercentage { get; set; }
         public DateTime GeneratedAt { get; set; }
+        public int OverallScore { get; set; }
+        public int TechnicalScore { get; set; }
+        public int CommunicationScore { get; set; }
+        public int ConfidenceScore { get; set; }
+        public string Strengths { get; set; } = string.Empty;
+        public string Weaknesses { get; set; } = string.Empty;
+        public string Recommendations { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
     }
 }
