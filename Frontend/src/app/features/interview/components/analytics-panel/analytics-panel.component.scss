@@ -232,6 +232,40 @@
   }
 }
 
+// Voice Intelligence Section
+.voice-intelligence-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  
+  .section-icon {
+    font-size: 1.25rem;
+  }
+  
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e5e7eb;
+  }
+}
+
+.score-card {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  
+  .metric-value.large {
+    font-size: 2rem;
+  }
+}
+
 // Responsive design
 @media (max-width: 768px) {
   .analytics-panel {

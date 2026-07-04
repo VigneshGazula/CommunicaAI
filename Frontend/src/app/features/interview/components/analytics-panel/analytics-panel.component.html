@@ -59,6 +59,86 @@
     }
   </div>
 
+  <!-- Voice Intelligence Metrics (after recording or during if enough data) -->
+  @if (showVoiceIntelligence()) {
+    <div class="voice-intelligence-section">
+      <div class="section-header">
+        <span class="section-icon">🧠</span>
+        <h4>Voice Intelligence</h4>
+      </div>
+
+      <div class="metrics-grid">
+        <!-- Average WPM & Pace Rating -->
+        <div class="metric-card">
+          <div class="metric-icon">📊</div>
+          <div class="metric-content">
+            <div class="metric-label">Average Pace</div>
+            <div class="metric-value">{{ voiceIntel().averageWPM }} WPM</div>
+            <div class="metric-feedback" [style.color]="paceRatingColor()">
+              {{ voiceIntel().paceRating }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Filler Words -->
+        <div class="metric-card">
+          <div class="metric-icon">💬</div>
+          <div class="metric-content">
+            <div class="metric-label">Filler Words</div>
+            <div class="metric-value">{{ voiceIntel().fillerWordCount }}</div>
+            @if (voiceIntel().mostUsedFillerWord) {
+              <div class="metric-feedback">Most: {{ voiceIntel().mostUsedFillerWord }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- Longest Pause -->
+        <div class="metric-card">
+          <div class="metric-icon">⏸️</div>
+          <div class="metric-content">
+            <div class="metric-label">Longest Pause</div>
+            <div class="metric-value">{{ voiceIntel().longestPause }}s</div>
+            <div class="metric-feedback">{{ voiceIntel().pauseCount }} total pauses</div>
+          </div>
+        </div>
+
+        <!-- Voice Energy -->
+        <div class="metric-card">
+          <div class="metric-icon">⚡</div>
+          <div class="metric-content">
+            <div class="metric-label">Voice Energy</div>
+            <div class="metric-value" [style.color]="energyColor()">
+              {{ voiceIntel().voiceEnergy }}%
+            </div>
+            <div class="metric-feedback">Avg Volume: {{ voiceIntel().averageVolume }}%</div>
+          </div>
+        </div>
+
+        <!-- Fluency Score -->
+        <div class="metric-card score-card">
+          <div class="metric-icon">🎯</div>
+          <div class="metric-content">
+            <div class="metric-label">Fluency Score</div>
+            <div class="metric-value large" [style.color]="fluencyColor()">
+              {{ voiceIntel().fluencyScore }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Communication Score -->
+        <div class="metric-card score-card">
+          <div class="metric-icon">💡</div>
+          <div class="metric-content">
+            <div class="metric-label">Communication Score</div>
+            <div class="metric-value large" [style.color]="communicationColor()">
+              {{ voiceIntel().communicationScore }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- Live Transcript -->
   @if (metrics().currentTranscript && metrics().recordingState === 'active') {
     <div class="transcript-preview">

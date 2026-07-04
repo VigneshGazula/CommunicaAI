@@ -207,9 +207,6 @@ export class LiveComponent implements OnInit, OnDestroy {
       // Release any existing stream first
       this.releaseMediaStream();
       
-      // Start analytics tracking
-      this.analytics.startRecording();
-      
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -217,6 +214,9 @@ export class LiveComponent implements OnInit, OnDestroy {
           sampleRate: 44100
         } 
       });
+      
+      // Start analytics tracking with media stream for voice energy analysis
+      this.analytics.startRecording(this.mediaStream);
       
       this.audioChunks = [];
 
