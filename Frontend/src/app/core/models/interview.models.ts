@@ -125,6 +125,16 @@ export interface InterviewSession {
   createdAt: Date;
   completedAt?: Date;
   currentQuestionIndex: number;
+  result?: {
+    overallScore: number;
+    technicalScore: number;
+    communicationScore: number;
+    confidenceScore: number;
+    strengths: string;
+    weaknesses: string;
+    recommendations: string;
+    summary: string;
+  };
 }
 
 export interface InterviewHistoryResponse {

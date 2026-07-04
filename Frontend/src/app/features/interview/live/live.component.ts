@@ -3,6 +3,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
 import { InterviewService } from '../../../core/services/interview.service';
+import { InterviewAnalyticsService } from '../../../core/services/interview-analytics.service';
+import { AnalyticsPanelComponent } from '../components/analytics-panel/analytics-panel.component';
 import { InterviewSession, InterviewQuestion, SubmitAudioAnswerResponse } from '../../../core/models/interview.models';
 
 type SpeechState = 'idle' | 'ai-speaking' | 'user-turn' | 'user-recording';
@@ -10,7 +12,7 @@ type SpeechState = 'idle' | 'ai-speaking' | 'user-turn' | 'user-recording';
 @Component({
   selector: 'app-live-interview',
   standalone: true,
-  imports: [TitleCasePipe],
+  imports: [TitleCasePipe, AnalyticsPanelComponent],
   templateUrl: './live.component.html',
   styleUrl: './live.component.scss'
 })
@@ -19,6 +21,7 @@ export class LiveComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly interviewService = inject(InterviewService);
+  private readonly analytics = inject(InterviewAnalyticsService);
 
   readonly session = signal<InterviewSession | null>(null);
   readonly currentQuestion = signal<InterviewQuestion | null>(null);
@@ -204,6 +207,9 @@ export class LiveComponent implements OnInit, OnDestroy {
       // Release any existing stream first
       this.releaseMediaStream();
       
+      // Start analytics tracking
+      this.analytics.startRecording();
+      
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -243,6 +249,7 @@ export class LiveComponent implements OnInit, OnDestroy {
         console.error('MediaRecorder error:', event);
         this.error.set('Recording error occurred. Please try again.');
         this.speechState.set('user-turn');
+        this.analytics.stopRecording();
         this.releaseMediaStream();
       };
 
@@ -265,11 +272,15 @@ export class LiveComponent implements OnInit, OnDestroy {
       
       this.error.set(errorMessage);
       this.speechState.set('user-turn');
+      this.analytics.reset();
       this.releaseMediaStream();
     }
   }
 
   stopRecording(): void {
+    // Stop analytics tracking
+    this.analytics.stopRecording();
+    
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try {
         this.mediaRecorder.stop();
@@ -369,6 +380,7 @@ export class LiveComponent implements OnInit, OnDestroy {
     this.saveTranscriptToSession();
     this.stopSpeaking();
     this.stopRecording();
+    this.analytics.reset(); // Reset analytics for next question
 
     const session = this.session();
     if (!session) return;
@@ -392,6 +404,7 @@ export class LiveComponent implements OnInit, OnDestroy {
     this.saveTranscriptToSession();
     this.stopSpeaking();
     this.stopRecording();
+    this.analytics.reset(); // Reset analytics for previous question
 
     const session = this.session();
     if (!session) return;

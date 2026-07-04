@@ -27,10 +27,6 @@ export class InterviewService {
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
   public currentSession$ = this.currentSessionSubject.asObservable();
 
-  /**
-   * Create a new interview session
-   * Calls: POST /api/interviews
-   */
   createSession(setup: InterviewSetup): Observable<InterviewSession> {
     const request: CreateInterviewRequest = {
       role: setup.role,
@@ -42,11 +38,10 @@ export class InterviewService {
 
     return this.http.post<CreateInterviewResponse>(this.apiUrl, request).pipe(
       map(response => {
-        // Transform backend response to frontend session model
         const session: InterviewSession = {
           id: response.sessionId,
           setup: setup,
-          questions: [], // Will be loaded separately
+          questions: [],
           answers: [],
           status: 'in-progress',
           createdAt: new Date(response.startedAt),
@@ -63,17 +58,10 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Get current session from memory
-   */
   getCurrentSession(): InterviewSession | null {
     return this.currentSessionSubject.value;
   }
 
-  /**
-   * Load full interview session details
-   * Calls: GET /api/interviews/{sessionId}
-   */
   loadSessionDetails(sessionId: string): Observable<InterviewSession> {
     return this.http.get<InterviewDetailResponse>(`${this.apiUrl}/${sessionId}`).pipe(
       map(response => this.mapDetailResponseToSession(response)),
@@ -85,10 +73,6 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Load questions for a session
-   * Calls: GET /api/interviews/{sessionId}/questions
-   */
   loadQuestions(sessionId: string): Observable<InterviewQuestion[]> {
     return this.http.get<QuestionResponse[]>(`${this.apiUrl}/${sessionId}/questions`).pipe(
       map(responses => responses.map(q => this.mapQuestionResponse(q))),
@@ -106,10 +90,6 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Save answer transcript (updates local state only)
-   * Note: Backend submission happens via InterviewAnswerController
-   */
   saveTranscript(sessionId: string, questionId: string, transcript: string): Observable<void> {
     const session = this.currentSessionSubject.value;
     
@@ -117,7 +97,6 @@ export class InterviewService {
       return throwError(() => new Error('Session not found'));
     }
 
-    // Update or create answer in local state
     const existingAnswerIndex = session.answers.findIndex(a => a.questionId === questionId);
     const answer: InterviewAnswer = {
       questionId,
@@ -131,7 +110,6 @@ export class InterviewService {
       session.answers.push(answer);
     }
 
-    // Update question's isAnswered flag
     const question = session.questions.find(q => q.id === questionId);
     if (question) {
       question.isAnswered = true;
@@ -145,9 +123,6 @@ export class InterviewService {
     });
   }
 
-  /**
-   * Update current question index in local state
-   */
   updateQuestionIndex(sessionId: string, index: number): Observable<void> {
     const session = this.currentSessionSubject.value;
     
@@ -164,10 +139,6 @@ export class InterviewService {
     });
   }
 
-  /**
-   * Complete the interview session
-   * Calls: POST /api/interviews/{sessionId}/complete
-   */
   completeInterview(sessionId: string): Observable<void> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/${sessionId}/complete`, {}).pipe(
       tap(() => {
@@ -186,10 +157,6 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Submit audio answer with transcription and evaluation
-   * Calls: POST /api/interviews/{sessionId}/answers/audio
-   */
   submitAudioAnswer(
     sessionId: string,
     questionId: string,
@@ -206,13 +173,10 @@ export class InterviewService {
       formData
     ).pipe(
       tap(response => {
-        // Update local session state with answer
         const session = this.currentSessionSubject.value;
         if (session && session.id === sessionId) {
-          // Remove existing answer for this question
           session.answers = session.answers.filter(a => a.questionId !== questionId);
           
-          // Add new answer with evaluation
           const answer: InterviewAnswer = {
             questionId,
             text: response.transcript,
@@ -230,7 +194,6 @@ export class InterviewService {
           };
           session.answers.push(answer);
 
-          // Mark question as answered
           const question = session.questions.find(q => q.id === questionId);
           if (question) {
             question.isAnswered = true;
@@ -246,17 +209,10 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Clear current session from memory
-   */
   clearCurrentSession(): void {
     this.currentSessionSubject.next(null);
   }
 
-  /**
-   * Get user's interview history
-   * Calls: GET /api/interviews/my-history
-   */
   getUserHistory(): Observable<InterviewHistoryResponse[]> {
     return this.http.get<InterviewHistoryResponse[]>(`${this.apiUrl}/my-history`).pipe(
       catchError(error => {
@@ -266,10 +222,6 @@ export class InterviewService {
     );
   }
 
-  /**
-   * Get interview metadata (roles, difficulties, categories)
-   * Calls: GET /api/question-bank/metadata
-   */
   getMetadata(): Observable<InterviewMetadata> {
     return this.http.get<InterviewMetadata>(`${this.questionBankUrl}/metadata`).pipe(
       catchError(error => {
@@ -279,7 +231,6 @@ export class InterviewService {
     );
   }
 
-  // Helper method to map backend response to frontend model
   private mapDetailResponseToSession(response: InterviewDetailResponse): InterviewSession {
     const questions = response.questions.map(q => this.mapQuestionWithAnswer(q));
     const answers = response.questions
@@ -304,7 +255,17 @@ export class InterviewService {
       status: response.status.toLowerCase() as 'draft' | 'in-progress' | 'completed',
       createdAt: new Date(response.startedAt),
       completedAt: response.completedAt ? new Date(response.completedAt) : undefined,
-      currentQuestionIndex: 0
+      currentQuestionIndex: 0,
+      result: response.result ? {
+        overallScore: response.result.overallScore ?? 0,
+        technicalScore: response.result.technicalScore ?? 0,
+        communicationScore: response.result.communicationScore ?? 0,
+        confidenceScore: response.result.confidenceScore ?? 0,
+        strengths: response.result.strengths ?? '',
+        weaknesses: response.result.weaknesses ?? '',
+        recommendations: response.result.recommendations ?? '',
+        summary: response.result.summary ?? ''
+      } : undefined
     };
   }
 

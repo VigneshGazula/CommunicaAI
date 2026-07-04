@@ -173,7 +173,15 @@ namespace CommunicaAI.Services
                     TotalQuestions = result.TotalQuestions,
                     AnsweredQuestions = result.AnsweredQuestions,
                     CompletionPercentage = result.CompletionPercentage,
-                    GeneratedAt = result.GeneratedAt
+                    GeneratedAt = result.GeneratedAt,
+                    OverallScore = result.OverallScore,
+                    TechnicalScore = result.TechnicalScore,
+                    CommunicationScore = result.CommunicationScore,
+                    ConfidenceScore = result.ConfidenceScore,
+                    Strengths = result.Strengths,
+                    Weaknesses = result.Weaknesses,
+                    Recommendations = result.Recommendations,
+                    Summary = result.Summary
                 } : null
             };
         }

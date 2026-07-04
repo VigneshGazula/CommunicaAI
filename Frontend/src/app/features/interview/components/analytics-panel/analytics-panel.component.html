@@ -1,0 +1,89 @@
+<div class="analytics-panel">
+  <div class="panel-header">
+    <span class="status-indicator" [style.background-color]="statusColor()">
+      {{ statusIcon() }}
+    </span>
+    <h3>Live Analytics</h3>
+  </div>
+
+  <div class="metrics-grid">
+    <!-- Recording Timer -->
+    <div class="metric-card">
+      <div class="metric-icon">⏱️</div>
+      <div class="metric-content">
+        <div class="metric-label">Recording Time</div>
+        <div class="metric-value">{{ formattedDuration() }}</div>
+      </div>
+    </div>
+
+    <!-- Word Count -->
+    <div class="metric-card">
+      <div class="metric-icon">📝</div>
+      <div class="metric-content">
+        <div class="metric-label">Words Spoken</div>
+        <div class="metric-value">{{ metrics().wordCount }}</div>
+      </div>
+    </div>
+
+    <!-- Speaking Speed -->
+    <div class="metric-card">
+      <div class="metric-icon">🗣️</div>
+      <div class="metric-content">
+        <div class="metric-label">Speaking Speed</div>
+        <div class="metric-value" [style.color]="wpmColor()">
+          {{ metrics().speakingSpeed }} WPM
+        </div>
+        <div class="metric-feedback">{{ wpmFeedback() }}</div>
+      </div>
+    </div>
+
+    <!-- Silence Detection -->
+    @if (metrics().isLongPause) {
+      <div class="metric-card warning">
+        <div class="metric-icon">⚠️</div>
+        <div class="metric-content">
+          <div class="metric-label">Long Pause Detected</div>
+          <div class="metric-value">{{ metrics().lastSilenceDuration }}s silence</div>
+        </div>
+      </div>
+    }
+
+    @if (metrics().silenceCount > 0 && !metrics().isLongPause) {
+      <div class="metric-card">
+        <div class="metric-icon">🔇</div>
+        <div class="metric-content">
+          <div class="metric-label">Pauses</div>
+          <div class="metric-value">{{ metrics().silenceCount }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Live Transcript -->
+  @if (metrics().currentTranscript && metrics().recordingState === 'active') {
+    <div class="transcript-preview">
+      <div class="transcript-header">
+        <span class="transcript-icon">💬</span>
+        <span class="transcript-label">Live Transcript</span>
+        <span class="live-badge">LIVE</span>
+      </div>
+      <div class="transcript-content">
+        {{ metrics().currentTranscript }}
+      </div>
+    </div>
+  }
+
+  <!-- Microphone Status -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-dot" [style.background-color]="statusColor()"></span>
+      <span class="status-text">{{ metrics().microphoneStatus | titlecase }}</span>
+    </div>
+    
+    @if (metrics().recordingState === 'active') {
+      <div class="pulse-indicator">
+        <div class="pulse"></div>
+      </div>
+    }
+  </div>
+</div>

@@ -20,146 +20,65 @@ export class ResultComponent implements OnInit {
   readonly loading = signal(true);
   readonly copySuccess = signal(false);
 
-  // Computed scores from answer evaluations
+  // Computed scores from backend result
   readonly overallScore = computed(() => {
     const session = this.session();
-    if (!session) return 0;
-
-    const evaluations = session.answers
-      .map(a => a.evaluation)
-      .filter(e => e !== undefined);
-
-    if (evaluations.length === 0) return 0;
-
-    const avgScore = evaluations.reduce((sum, e) => sum + e!.overallScore, 0) / evaluations.length;
-    return Math.round(avgScore);
+    return session?.result?.overallScore ?? 0;
   });
 
   readonly technicalScore = computed(() => {
     const session = this.session();
-    if (!session) return 0;
-
-    const evaluations = session.answers
-      .map(a => a.evaluation)
-      .filter(e => e !== undefined);
-
-    if (evaluations.length === 0) return 0;
-
-    const avgScore = evaluations.reduce((sum, e) => sum + e!.technicalScore, 0) / evaluations.length;
-    return Math.round(avgScore);
+    return session?.result?.technicalScore ?? 0;
   });
 
   readonly communicationScore = computed(() => {
     const session = this.session();
-    if (!session) return 0;
-
-    const evaluations = session.answers
-      .map(a => a.evaluation)
-      .filter(e => e !== undefined);
-
-    if (evaluations.length === 0) return 0;
-
-    const avgScore = evaluations.reduce((sum, e) => sum + e!.clarityScore, 0) / evaluations.length;
-    return Math.round(avgScore);
+    return session?.result?.communicationScore ?? 0;
   });
 
   readonly confidenceScore = computed(() => {
     const session = this.session();
-    if (!session) return 0;
-
-    const evaluations = session.answers
-      .map(a => a.evaluation)
-      .filter(e => e !== undefined);
-
-    if (evaluations.length === 0) return 0;
-
-    const avgScore = evaluations.reduce((sum, e) => sum + e!.completenessScore, 0) / evaluations.length;
-    return Math.round(avgScore);
+    return session?.result?.confidenceScore ?? 0;
   });
 
   readonly strengths = computed(() => {
     const session = this.session();
-    if (!session) return [];
+    if (!session?.result?.strengths) return [];
 
-    // Collect all unique strengths from evaluations
-    const allStrengths = new Set<string>();
-    
-    session.answers.forEach(answer => {
-      if (answer.evaluation?.strengths) {
-        // Split by common delimiters and clean up
-        const strengthItems = answer.evaluation.strengths
-          .split(/[,;.]/)
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
-        
-        strengthItems.forEach(s => allStrengths.add(s));
-      }
-    });
-
-    return Array.from(allStrengths).slice(0, 5);
+    // Split by semicolons and clean up
+    return session.result.strengths
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .slice(0, 5);
   });
 
   readonly improvements = computed(() => {
     const session = this.session();
-    if (!session) return [];
+    if (!session?.result?.weaknesses) return [];
 
-    // Collect all unique improvements from evaluations
-    const allImprovements = new Set<string>();
-    
-    session.answers.forEach(answer => {
-      if (answer.evaluation?.improvements) {
-        // Split by common delimiters and clean up
-        const improvementItems = answer.evaluation.improvements
-          .split(/[,;.]/)
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
-        
-        improvementItems.forEach(s => allImprovements.add(s));
-      }
-    });
-
-    return Array.from(allImprovements).slice(0, 5);
+    // Split by semicolons and clean up
+    return session.result.weaknesses
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .slice(0, 5);
   });
 
   readonly summary = computed(() => {
     const session = this.session();
-    if (!session) return '';
-
-    // Combine all feedback into a summary
-    const allFeedback = session.answers
-      .map(a => a.evaluation?.feedback)
-      .filter(f => f && f.length > 0)
-      .join(' ');
-
-    // Return first 500 characters as summary
-    return allFeedback.slice(0, 500) + (allFeedback.length > 500 ? '...' : '');
+    return session?.result?.summary ?? 'Complete the interview to see your summary.';
   });
 
   readonly recommendations = computed(() => {
-    const score = this.overallScore();
-    const technicalScore = this.technicalScore();
-    const communicationScore = this.communicationScore();
-    const confidenceScore = this.confidenceScore();
+    const session = this.session();
+    if (!session?.result?.recommendations) return [];
 
-    const recs: string[] = [];
-
-    if (technicalScore < 70) {
-      recs.push('Review fundamental concepts and practice technical problem-solving');
-    }
-    if (communicationScore < 70) {
-      recs.push('Work on articulating your thoughts more clearly and concisely');
-    }
-    if (confidenceScore < 70) {
-      recs.push('Provide more complete answers with specific examples and details');
-    }
-    if (score >= 80) {
-      recs.push('Excellent performance! Keep practicing to maintain your skills');
-    }
-    if (score < 60) {
-      recs.push('Consider taking additional courses or tutorials in weak areas');
-    }
-
-    return recs.length > 0 ? recs : ['Continue practicing interview skills regularly'];
+    // Split by periods or semicolons and clean up
+    return session.result.recommendations
+      .split(/[.;]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
   });
 
   ngOnInit(): void {
