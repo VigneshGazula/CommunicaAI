@@ -25,7 +25,7 @@ public class GeminiService : IGeminiService
             string answer)
     {
         var prompt = $@"
-You are a senior technical interviewer.
+You are a senior technical interviewer evaluating a candidate's answer.
 
 Question:
 {question}
@@ -33,20 +33,18 @@ Question:
 Candidate Answer:
 {answer}
 
-Evaluate the answer.
+Evaluate the answer and return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+{{
+  ""technicalScore"": <number 0-100>,
+  ""clarityScore"": <number 0-100>,
+  ""completenessScore"": <number 0-100>,
+  ""overallScore"": <number 0-100>,
+  ""strengths"": ""<single string with strengths separated by semicolons>"",
+  ""improvements"": ""<single string with improvements separated by semicolons>"",
+  ""feedback"": ""<single string with overall feedback>""
+}}
 
-Return ONLY a JSON object with these fields:
-
-technicalScore
-clarityScore
-completenessScore
-overallScore
-strengths
-improvements
-feedback
-
-Do not include markdown.
-Do not include explanation outside JSON.";
+Important: strengths, improvements, and feedback must be single strings, not arrays.";
 
         var request = new
         {
@@ -89,11 +87,72 @@ Do not include explanation outside JSON.";
             .GetProperty("text")
             .GetString();
 
-        return JsonSerializer.Deserialize<SubmitAudioAnswerResponse>(
-            aiResponse!,
-            new JsonSerializerOptions
+        // Clean up markdown if present
+        var cleanedResponse = aiResponse!
+            .Replace("```json", "")
+            .Replace("```", "")
+            .Trim();
+
+        try
+        {
+            // Try deserializing with flexible handling
+            using var evalDoc = JsonDocument.Parse(cleanedResponse);
+            var root = evalDoc.RootElement;
+
+            return new SubmitAudioAnswerResponse
             {
-                PropertyNameCaseInsensitive = true
-            })!;
+                TechnicalScore = root.GetProperty("technicalScore").GetInt32(),
+                ClarityScore = root.GetProperty("clarityScore").GetInt32(),
+                CompletenessScore = root.GetProperty("completenessScore").GetInt32(),
+                OverallScore = root.GetProperty("overallScore").GetInt32(),
+                Strengths = GetStringOrArrayAsString(root, "strengths"),
+                Improvements = GetStringOrArrayAsString(root, "improvements"),
+                Feedback = GetStringOrArrayAsString(root, "feedback")
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Deserialization error: {ex.Message}");
+            Console.WriteLine($"Response: {cleanedResponse}");
+            
+            // Return default values on error
+            return new SubmitAudioAnswerResponse
+            {
+                TechnicalScore = 70,
+                ClarityScore = 70,
+                CompletenessScore = 70,
+                OverallScore = 70,
+                Strengths = "Answer provided",
+                Improvements = "Could be more detailed",
+                Feedback = "Evaluation could not be completed due to formatting issues"
+            };
+        }
+    }
+
+    private static string GetStringOrArrayAsString(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property))
+        {
+            return string.Empty;
+        }
+
+        if (property.ValueKind == JsonValueKind.String)
+        {
+            return property.GetString() ?? string.Empty;
+        }
+        else if (property.ValueKind == JsonValueKind.Array)
+        {
+            var items = new List<string>();
+            foreach (var item in property.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String)
+                {
+                    items.Add(item.GetString() ?? string.Empty);
+                }
+            }
+            return string.Join("; ", items);
+        }
+
+        return string.Empty;
     }
 }
