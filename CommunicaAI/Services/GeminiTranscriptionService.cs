@@ -61,25 +61,51 @@ public class GeminiTranscriptionService
         var url =
             $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
 
-        var response =
-            await _httpClient.PostAsJsonAsync(
-                url,
-                requestBody);
+        // Retry logic for rate limiting (429 errors)
+        int maxRetries = 3;
+        int retryDelayMs = 2000; // Start with 2 seconds
 
-        response.EnsureSuccessStatusCode();
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var response =
+                    await _httpClient.PostAsJsonAsync(
+                        url,
+                        requestBody);
 
-        var json =
-            await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                {
+                    // Rate limited - wait and retry with exponential backoff
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2; // Double the delay for next attempt
+                    continue;
+                }
 
-        using var doc =
-            JsonDocument.Parse(json);
+                response.EnsureSuccessStatusCode();
 
-        return doc.RootElement
-            .GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString()!
-            .Trim();
+                var json =
+                    await response.Content.ReadAsStringAsync();
+
+                using var doc =
+                    JsonDocument.Parse(json);
+
+                return doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString()!
+                    .Trim();
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+            {
+                // Rate limited - wait and retry with exponential backoff
+                await Task.Delay(retryDelayMs);
+                retryDelayMs *= 2;
+            }
+        }
+
+        throw new Exception("Failed to transcribe audio after multiple retries due to rate limiting. Please try again later.");
     }
 }

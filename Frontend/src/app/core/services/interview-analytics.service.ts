@@ -32,9 +32,16 @@ export class InterviewAnalyticsService {
   // Computed metrics
   readonly speakingSpeed = computed(() => {
     const duration = this.recordingDuration();
-    if (duration === 0) return 0;
+    const words = this.wordCount();
+    
+    // Don't calculate if no words or duration less than 3 seconds
+    if (words === 0 || duration < 3) return 0;
+    
     const minutes = duration / 60;
-    return Math.round(this.wordCount() / minutes);
+    const wpm = Math.round(words / minutes);
+    
+    // Cap at reasonable limits (0-300 WPM)
+    return Math.min(300, Math.max(0, wpm));
   });
 
   // Public read-only signals
@@ -247,21 +254,27 @@ export class InterviewAnalyticsService {
       };
 
       this.speechRecognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+        let fullTranscript = '';
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
+        // Get all final results
+        for (let i = 0; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
+            fullTranscript += event.results[i][0].transcript + ' ';
           }
         }
 
-        // Combine all previous final results with current interim
-        const fullTranscript = this.currentTranscript() + finalTranscript + interimTranscript;
-        this.updateTranscript(fullTranscript.trim());
+        // Add interim results from the last result
+        if (event.results.length > 0) {
+          const lastResult = event.results[event.results.length - 1];
+          if (!lastResult.isFinal) {
+            fullTranscript += lastResult[0].transcript;
+          }
+        }
+
+        // Update transcript if we have new content
+        if (fullTranscript.trim().length > 0) {
+          this.updateTranscript(fullTranscript.trim());
+        }
       };
 
       this.speechRecognition.onerror = (event: any) => {

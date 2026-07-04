@@ -66,15 +66,46 @@ Important: strengths, improvements, and feedback must be single strings, not arr
         var url =
             $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
 
-        var response =
-            await _httpClient.PostAsJsonAsync(
-                url,
-                request);
+        // Retry logic for rate limiting (429 errors)
+        int maxRetries = 3;
+        int retryDelayMs = 2000; // Start with 2 seconds
+        
+        string json = string.Empty;
 
-        response.EnsureSuccessStatusCode();
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var response =
+                    await _httpClient.PostAsJsonAsync(
+                        url,
+                        request);
 
-        var json =
-            await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                {
+                    // Rate limited - wait and retry with exponential backoff
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2; // Double the delay for next attempt
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                json = await response.Content.ReadAsStringAsync();
+                break; // Success - exit retry loop
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+            {
+                // Rate limited - wait and retry with exponential backoff
+                await Task.Delay(retryDelayMs);
+                retryDelayMs *= 2;
+            }
+        }
+
+        if (string.IsNullOrEmpty(json))
+        {
+            throw new Exception("Failed to evaluate answer after multiple retries due to rate limiting. Please try again later.");
+        }
 
         using var document =
             JsonDocument.Parse(json);
