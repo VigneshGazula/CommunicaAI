@@ -33,10 +33,21 @@ export interface SubmitAudioAnswerResponse {
   answerId: string;
   transcript: string;
   audioUrl: string;
+  // Technical Evaluation
   technicalScore: number;
   clarityScore: number;
   completenessScore: number;
   overallScore: number;
+  // AI Communication Evaluation (Module 3)
+  communicationScore: number;
+  confidenceScore: number;
+  grammarScore: number;
+  vocabularyScore: number;
+  professionalismScore: number;
+  answerStructureScore: number;
+  persuasivenessScore: number;
+  concisenessScore: number;
+  // Feedback
   strengths: string;
   improvements: string;
   feedback: string;
@@ -107,10 +118,21 @@ export interface InterviewAnswer {
 }
 
 export interface AnswerEvaluation {
+  // Technical Evaluation
   technicalScore: number;
   clarityScore: number;
   completenessScore: number;
   overallScore: number;
+  // AI Communication Evaluation (Module 3)
+  communicationScore: number;
+  confidenceScore: number;
+  grammarScore: number;
+  vocabularyScore: number;
+  professionalismScore: number;
+  answerStructureScore: number;
+  persuasivenessScore: number;
+  concisenessScore: number;
+  // Feedback
   strengths: string;
   improvements: string;
   feedback: string;

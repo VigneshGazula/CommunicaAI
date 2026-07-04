@@ -183,10 +183,21 @@ export class InterviewService {
             timestamp: new Date(),
             audioUrl: response.audioUrl,
             evaluation: {
+              // Technical Evaluation
               technicalScore: response.technicalScore,
               clarityScore: response.clarityScore,
               completenessScore: response.completenessScore,
               overallScore: response.overallScore,
+              // AI Communication Evaluation
+              communicationScore: response.communicationScore,
+              confidenceScore: response.confidenceScore,
+              grammarScore: response.grammarScore,
+              vocabularyScore: response.vocabularyScore,
+              professionalismScore: response.professionalismScore,
+              answerStructureScore: response.answerStructureScore,
+              persuasivenessScore: response.persuasivenessScore,
+              concisenessScore: response.concisenessScore,
+              // Feedback
               strengths: response.strengths,
               improvements: response.improvements,
               feedback: response.feedback

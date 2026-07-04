@@ -25,7 +25,7 @@ public class GeminiService : IGeminiService
             string answer)
     {
         var prompt = $@"
-You are a senior technical interviewer evaluating a candidate's answer.
+You are a senior technical interviewer evaluating a candidate's answer across multiple dimensions.
 
 Question:
 {question}
@@ -33,18 +33,40 @@ Question:
 Candidate Answer:
 {answer}
 
-Evaluate the answer and return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+Evaluate the answer comprehensively and return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
 {{
   ""technicalScore"": <number 0-100>,
   ""clarityScore"": <number 0-100>,
   ""completenessScore"": <number 0-100>,
   ""overallScore"": <number 0-100>,
+  ""communicationScore"": <number 0-100>,
+  ""confidenceScore"": <number 0-100>,
+  ""grammarScore"": <number 0-100>,
+  ""vocabularyScore"": <number 0-100>,
+  ""professionalismScore"": <number 0-100>,
+  ""answerStructureScore"": <number 0-100>,
+  ""persuasivenessScore"": <number 0-100>,
+  ""concisenessScore"": <number 0-100>,
   ""strengths"": ""<single string with strengths separated by semicolons>"",
   ""improvements"": ""<single string with improvements separated by semicolons>"",
   ""feedback"": ""<single string with overall feedback>""
 }}
 
-Important: strengths, improvements, and feedback must be single strings, not arrays.";
+Evaluation Guidelines:
+- Technical Score: Accuracy and depth of technical knowledge
+- Clarity Score: How clearly the answer was expressed
+- Completeness Score: How thoroughly the answer addresses the question
+- Overall Score: Weighted average of all aspects
+- Communication Score: Overall verbal communication quality
+- Confidence Score: Conviction and assurance in the response
+- Grammar Score: Grammatical correctness and sentence structure
+- Vocabulary Score: Appropriate use of professional terminology
+- Professionalism Score: Professional tone and demeanor
+- Answer Structure Score: Logical organization and flow
+- Persuasiveness Score: Ability to convince and present compelling arguments
+- Conciseness Score: Balance between detail and brevity
+
+Important: All text fields (strengths, improvements, feedback) must be single strings, not arrays.";
 
         var request = new
         {
@@ -132,10 +154,23 @@ Important: strengths, improvements, and feedback must be single strings, not arr
 
             return new SubmitAudioAnswerResponse
             {
-                TechnicalScore = root.GetProperty("technicalScore").GetInt32(),
-                ClarityScore = root.GetProperty("clarityScore").GetInt32(),
-                CompletenessScore = root.GetProperty("completenessScore").GetInt32(),
-                OverallScore = root.GetProperty("overallScore").GetInt32(),
+                // Technical Evaluation
+                TechnicalScore = GetIntProperty(root, "technicalScore", 70),
+                ClarityScore = GetIntProperty(root, "clarityScore", 70),
+                CompletenessScore = GetIntProperty(root, "completenessScore", 70),
+                OverallScore = GetIntProperty(root, "overallScore", 70),
+                
+                // AI Communication Evaluation
+                CommunicationScore = GetIntProperty(root, "communicationScore", 70),
+                ConfidenceScore = GetIntProperty(root, "confidenceScore", 70),
+                GrammarScore = GetIntProperty(root, "grammarScore", 70),
+                VocabularyScore = GetIntProperty(root, "vocabularyScore", 70),
+                ProfessionalismScore = GetIntProperty(root, "professionalismScore", 70),
+                AnswerStructureScore = GetIntProperty(root, "answerStructureScore", 70),
+                PersuasivenessScore = GetIntProperty(root, "persuasivenessScore", 70),
+                ConcisenessScore = GetIntProperty(root, "concisenessScore", 70),
+                
+                // Text Feedback
                 Strengths = GetStringOrArrayAsString(root, "strengths"),
                 Improvements = GetStringOrArrayAsString(root, "improvements"),
                 Feedback = GetStringOrArrayAsString(root, "feedback")
@@ -153,11 +188,28 @@ Important: strengths, improvements, and feedback must be single strings, not arr
                 ClarityScore = 70,
                 CompletenessScore = 70,
                 OverallScore = 70,
+                CommunicationScore = 70,
+                ConfidenceScore = 70,
+                GrammarScore = 70,
+                VocabularyScore = 70,
+                ProfessionalismScore = 70,
+                AnswerStructureScore = 70,
+                PersuasivenessScore = 70,
+                ConcisenessScore = 70,
                 Strengths = "Answer provided",
                 Improvements = "Could be more detailed",
                 Feedback = "Evaluation could not be completed due to formatting issues"
             };
         }
+    }
+
+    private static int GetIntProperty(JsonElement root, string propertyName, int defaultValue)
+    {
+        if (root.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.Number)
+        {
+            return property.GetInt32();
+        }
+        return defaultValue;
     }
 
     private static string GetStringOrArrayAsString(JsonElement root, string propertyName)

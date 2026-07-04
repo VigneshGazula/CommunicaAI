@@ -73,10 +73,21 @@ namespace CommunicaAI.Services
                 {
                     Id = Guid.NewGuid(),
                     InterviewAnswerId = answer.Id,
+                    // Technical Evaluation
                     TechnicalScore = evaluation.TechnicalScore,
                     ClarityScore = evaluation.ClarityScore,
                     CompletenessScore = evaluation.CompletenessScore,
                     OverallScore = evaluation.OverallScore,
+                    // AI Communication Evaluation
+                    CommunicationScore = evaluation.CommunicationScore,
+                    ConfidenceScore = evaluation.ConfidenceScore,
+                    GrammarScore = evaluation.GrammarScore,
+                    VocabularyScore = evaluation.VocabularyScore,
+                    ProfessionalismScore = evaluation.ProfessionalismScore,
+                    AnswerStructureScore = evaluation.AnswerStructureScore,
+                    PersuasivenessScore = evaluation.PersuasivenessScore,
+                    ConcisenessScore = evaluation.ConcisenessScore,
+                    // Feedback
                     Strengths = evaluation.Strengths,
                     Improvements = evaluation.Improvements,
                     Feedback = evaluation.Feedback,
@@ -96,8 +107,8 @@ namespace CommunicaAI.Services
             if (evaluations.Any())
             {
                 technicalScore = (int)evaluations.Average(e => e.TechnicalScore);
-                communicationScore = (int)evaluations.Average(e => e.ClarityScore);
-                confidenceScore = (int)evaluations.Average(e => e.CompletenessScore);
+                communicationScore = (int)evaluations.Average(e => e.CommunicationScore);
+                confidenceScore = (int)evaluations.Average(e => e.ConfidenceScore);
                 overallScore = (int)evaluations.Average(e => e.OverallScore);
             }
 

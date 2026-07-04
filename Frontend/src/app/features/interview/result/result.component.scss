@@ -373,6 +373,13 @@
   border-top: 1px solid var(--border);
 }
 
+.communication-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .score-badge {
   display: inline-block;
   padding: 0.375rem 0.75rem;
@@ -383,6 +390,12 @@
 
   &.overall {
     font-weight: 700;
+  }
+
+  &.small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+    opacity: 0.95;
   }
 }
 

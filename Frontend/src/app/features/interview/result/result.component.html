@@ -170,8 +170,34 @@
                   <span class="score-badge" [style.background]="getScoreColor(evaluation.completenessScore)">
                     Completeness: {{ evaluation.completenessScore }}%
                   </span>
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.communicationScore)">
+                    Communication: {{ evaluation.communicationScore }}%
+                  </span>
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.confidenceScore)">
+                    Confidence: {{ evaluation.confidenceScore }}%
+                  </span>
+                  <span class="score-badge" [style.background]="getScoreColor(evaluation.grammarScore)">
+                    Grammar: {{ evaluation.grammarScore }}%
+                  </span>
                   <span class="score-badge overall" [style.background]="getScoreColor(evaluation.overallScore)">
                     Overall: {{ evaluation.overallScore }}%
+                  </span>
+                </div>
+                <div class="communication-scores">
+                  <span class="score-badge small" [style.background]="getScoreColor(evaluation.vocabularyScore)">
+                    Vocabulary: {{ evaluation.vocabularyScore }}%
+                  </span>
+                  <span class="score-badge small" [style.background]="getScoreColor(evaluation.professionalismScore)">
+                    Professionalism: {{ evaluation.professionalismScore }}%
+                  </span>
+                  <span class="score-badge small" [style.background]="getScoreColor(evaluation.answerStructureScore)">
+                    Structure: {{ evaluation.answerStructureScore }}%
+                  </span>
+                  <span class="score-badge small" [style.background]="getScoreColor(evaluation.persuasivenessScore)">
+                    Persuasiveness: {{ evaluation.persuasivenessScore }}%
+                  </span>
+                  <span class="score-badge small" [style.background]="getScoreColor(evaluation.concisenessScore)">
+                    Conciseness: {{ evaluation.concisenessScore }}%
                   </span>
                 </div>
               }
