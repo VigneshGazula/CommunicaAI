@@ -6,5 +6,7 @@ namespace CommunicaAI.Repositories.Interfaces
     {
         Task<InterviewResult> CreateAsync(InterviewResult result);
         Task<InterviewResult?> GetBySessionIdAsync(Guid sessionId);
+        Task<InterviewResult?> GetByIdAsync(Guid id);
+        Task<InterviewResult> UpdateAsync(InterviewResult result);
     }
 }

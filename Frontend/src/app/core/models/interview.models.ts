@@ -62,10 +62,31 @@ export interface InterviewResultResponse {
   technicalScore?: number;
   communicationScore?: number;
   confidenceScore?: number;
+  // Video Intelligence (Module 4)
+  eyeContactScore?: number;
+  postureScore?: number;
+  facialExpressionScore?: number;
+  videoConfidenceScore?: number;
+  videoFeedback?: string;
+  // Feedback
   strengths?: string;
   weaknesses?: string;
   recommendations?: string;
   summary?: string;
+  // AI Interview Coach (Module 5)
+  coachingSummary?: string;
+  coachingStrengths?: string;
+  coachingWeaknesses?: string;
+  communicationImprovements?: string;
+  technicalImprovements?: string;
+  videoImprovements?: string;
+  voiceImprovements?: string;
+  practiceRecommendations?: string;
+  suggestedRole?: string;
+  suggestedDifficulty?: string;
+  suggestedQuestionCount?: number;
+  learningResources?: string;
+  motivationalMessage?: string;
 }
 
 export interface QuestionWithAnswerResponse {
@@ -152,10 +173,29 @@ export interface InterviewSession {
     technicalScore: number;
     communicationScore: number;
     confidenceScore: number;
+    eyeContactScore?: number;
+    postureScore?: number;
+    facialExpressionScore?: number;
+    videoConfidenceScore?: number;
+    videoFeedback?: string;
     strengths: string;
     weaknesses: string;
     recommendations: string;
     summary: string;
+    // AI Coach
+    coachingSummary?: string;
+    coachingStrengths?: string;
+    coachingWeaknesses?: string;
+    communicationImprovements?: string;
+    technicalImprovements?: string;
+    videoImprovements?: string;
+    voiceImprovements?: string;
+    practiceRecommendations?: string;
+    suggestedRole?: string;
+    suggestedDifficulty?: string;
+    suggestedQuestionCount?: number;
+    learningResources?: string;
+    motivationalMessage?: string;
   };
 }
 

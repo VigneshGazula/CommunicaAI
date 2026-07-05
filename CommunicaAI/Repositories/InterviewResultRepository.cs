@@ -26,5 +26,18 @@ namespace CommunicaAI.Repositories
             return await _context.InterviewResults
                 .FirstOrDefaultAsync(r => r.InterviewSessionId == sessionId);
         }
+
+        public async Task<InterviewResult?> GetByIdAsync(Guid id)
+        {
+            return await _context.InterviewResults
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public async Task<InterviewResult> UpdateAsync(InterviewResult result)
+        {
+            _context.InterviewResults.Update(result);
+            await _context.SaveChangesAsync();
+            return result;
+        }
     }
 }

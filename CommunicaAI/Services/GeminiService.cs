@@ -238,4 +238,196 @@ Important: All text fields (strengths, improvements, feedback) must be single st
 
         return string.Empty;
     }
+
+    public async Task<CoachingReport> GenerateCoachingReportAsync(
+        string role,
+        string difficulty,
+        List<QuestionAnswerPair> qaList,
+        Dictionary<string, int> aggregateScores)
+    {
+        var qaPairs = string.Join("\n\n", qaList.Select((qa, i) => 
+            $"Q{i+1}: {qa.Question}\nA{i+1}: {qa.Answer}\nScores: Technical={qa.TechnicalScore}, Communication={qa.CommunicationScore}, Grammar={qa.GrammarScore}, Confidence={qa.ConfidenceScore}"
+        ));
+
+        var scores = string.Join(", ", aggregateScores.Select(kvp => $"{kvp.Key}: {kvp.Value}%"));
+
+        var prompt = $@"
+You are an expert AI Interview Coach providing personalized feedback and guidance.
+
+Interview Details:
+- Role: {role}
+- Difficulty: {difficulty}
+- Questions Answered: {qaList.Count}
+
+Aggregate Performance Scores:
+{scores}
+
+Question-Answer Analysis:
+{qaPairs}
+
+Generate a comprehensive coaching report and return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+{{
+  ""overallSummary"": ""<2-3 sentence overall performance summary>"",
+  ""topStrengths"": ""<semicolon-separated list of 3-5 top strengths>"",
+  ""keyWeaknesses"": ""<semicolon-separated list of 3-5 key weaknesses>"",
+  ""communicationImprovements"": ""<semicolon-separated specific communication tips>"",
+  ""technicalImprovements"": ""<semicolon-separated specific technical tips>"",
+  ""videoImprovements"": ""<semicolon-separated video presence tips, or 'Not applicable' if no video data>"",
+  ""voiceImprovements"": ""<semicolon-separated voice delivery tips, or 'Not applicable' if no voice data>"",
+  ""practiceRecommendations"": ""<semicolon-separated 4-5 actionable practice exercises>"",
+  ""suggestedRole"": ""<recommended interview role based on strengths>"",
+  ""suggestedDifficulty"": ""<Easy, Medium, or Hard - one level up if ready>"",
+  ""suggestedQuestionCount"": <number 5-15>,
+  ""learningResources"": ""<semicolon-separated 3-5 specific resources: courses, books, websites>"",
+  ""motivationalMessage"": ""<inspiring 2-3 sentence closing message>""
+}}
+
+Important: All text fields must be single strings with items separated by semicolons, not arrays.";
+
+        var request = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new[]
+                    {
+                        new { text = prompt }
+                    }
+                }
+            }
+        };
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+
+        // Retry logic
+        int maxRetries = 3;
+        int retryDelayMs = 2000;
+        string json = string.Empty;
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(url, request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                {
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2;
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+                json = await response.Content.ReadAsStringAsync();
+                break;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+            {
+                await Task.Delay(retryDelayMs);
+                retryDelayMs *= 2;
+            }
+        }
+
+        if (string.IsNullOrEmpty(json))
+        {
+            throw new Exception("Failed to generate coaching report after multiple retries");
+        }
+
+        using var document = JsonDocument.Parse(json);
+        var aiResponse = document.RootElement
+            .GetProperty("candidates")[0]
+            .GetProperty("content")
+            .GetProperty("parts")[0]
+            .GetProperty("text")
+            .GetString();
+
+        var cleanedResponse = aiResponse!
+            .Replace("```json", "")
+            .Replace("```", "")
+            .Trim();
+
+        try
+        {
+            using var coachDoc = JsonDocument.Parse(cleanedResponse);
+            var root = coachDoc.RootElement;
+
+            return new CoachingReport
+            {
+                OverallSummary = GetStringProperty(root, "overallSummary"),
+                TopStrengths = GetStringProperty(root, "topStrengths"),
+                KeyWeaknesses = GetStringProperty(root, "keyWeaknesses"),
+                CommunicationImprovements = GetStringProperty(root, "communicationImprovements"),
+                TechnicalImprovements = GetStringProperty(root, "technicalImprovements"),
+                VideoImprovements = GetStringProperty(root, "videoImprovements"),
+                VoiceImprovements = GetStringProperty(root, "voiceImprovements"),
+                PracticeRecommendations = GetStringProperty(root, "practiceRecommendations"),
+                SuggestedRole = GetStringProperty(root, "suggestedRole"),
+                SuggestedDifficulty = GetStringProperty(root, "suggestedDifficulty"),
+                SuggestedQuestionCount = GetIntProperty(root, "suggestedQuestionCount", 10),
+                LearningResources = GetStringProperty(root, "learningResources"),
+                MotivationalMessage = GetStringProperty(root, "motivationalMessage")
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Coaching report parsing error: {ex.Message}");
+            Console.WriteLine($"Response: {cleanedResponse}");
+
+            // Return default coaching report
+            return new CoachingReport
+            {
+                OverallSummary = "Good effort in completing the interview",
+                TopStrengths = "Completed all questions; Showed engagement",
+                KeyWeaknesses = "Continue practicing",
+                CommunicationImprovements = "Practice clear articulation",
+                TechnicalImprovements = "Review core concepts",
+                VideoImprovements = "Not applicable",
+                VoiceImprovements = "Not applicable",
+                PracticeRecommendations = "Practice mock interviews; Review technical concepts; Work on communication skills",
+                SuggestedRole = role,
+                SuggestedDifficulty = difficulty,
+                SuggestedQuestionCount = 10,
+                LearningResources = "Online coding platforms; Technical interview books; Practice websites",
+                MotivationalMessage = "Keep practicing and you'll continue to improve!"
+            };
+        }
+    }
+
+    private static string GetStringProperty(JsonElement root, string propertyName)
+    {
+        if (root.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String)
+        {
+            return property.GetString() ?? string.Empty;
+        }
+        return string.Empty;
+    }
+}
+
+// Supporting DTOs for coaching
+public class QuestionAnswerPair
+{
+    public string Question { get; set; } = string.Empty;
+    public string Answer { get; set; } = string.Empty;
+    public int TechnicalScore { get; set; }
+    public int CommunicationScore { get; set; }
+    public int GrammarScore { get; set; }
+    public int ConfidenceScore { get; set; }
+}
+
+public class CoachingReport
+{
+    public string OverallSummary { get; set; } = string.Empty;
+    public string TopStrengths { get; set; } = string.Empty;
+    public string KeyWeaknesses { get; set; } = string.Empty;
+    public string CommunicationImprovements { get; set; } = string.Empty;
+    public string TechnicalImprovements { get; set; } = string.Empty;
+    public string VideoImprovements { get; set; } = string.Empty;
+    public string VoiceImprovements { get; set; } = string.Empty;
+    public string PracticeRecommendations { get; set; } = string.Empty;
+    public string SuggestedRole { get; set; } = string.Empty;
+    public string SuggestedDifficulty { get; set; } = string.Empty;
+    public int SuggestedQuestionCount { get; set; }
+    public string LearningResources { get; set; } = string.Empty;
+    public string MotivationalMessage { get; set; } = string.Empty;
 }

@@ -41,6 +41,70 @@ export class ResultComponent implements OnInit {
     return session?.result?.confidenceScore ?? 0;
   });
 
+  // Video Intelligence Scores (Module 4)
+  readonly eyeContactScore = computed(() => {
+    const session = this.session();
+    return session?.result?.eyeContactScore ?? 0;
+  });
+
+  readonly postureScore = computed(() => {
+    const session = this.session();
+    return session?.result?.postureScore ?? 0;
+  });
+
+  readonly facialExpressionScore = computed(() => {
+    const session = this.session();
+    return session?.result?.facialExpressionScore ?? 0;
+  });
+
+  readonly videoConfidenceScore = computed(() => {
+    const session = this.session();
+    return session?.result?.videoConfidenceScore ?? 0;
+  });
+
+  readonly videoFeedback = computed(() => {
+    const session = this.session();
+    return session?.result?.videoFeedback ?? '';
+  });
+
+  readonly hasVideoMetrics = computed(() => {
+    const session = this.session();
+    return (session?.result?.eyeContactScore ?? 0) > 0 || 
+           (session?.result?.postureScore ?? 0) > 0 ||
+           (session?.result?.facialExpressionScore ?? 0) > 0;
+  });
+
+  // AI Interview Coach (Module 5)
+  readonly hasCoachingReport = computed(() => {
+    const session = this.session();
+    return !!(session?.result?.coachingSummary);
+  });
+
+  readonly coachingData = computed(() => {
+    const session = this.session();
+    if (!session?.result) return null;
+    
+    return {
+      summary: session.result.coachingSummary || '',
+      strengths: this.splitBySemicolon(session.result.coachingStrengths || ''),
+      weaknesses: this.splitBySemicolon(session.result.coachingWeaknesses || ''),
+      communicationImprovements: this.splitBySemicolon(session.result.communicationImprovements || ''),
+      technicalImprovements: this.splitBySemicolon(session.result.technicalImprovements || ''),
+      videoImprovements: this.splitBySemicolon(session.result.videoImprovements || ''),
+      voiceImprovements: this.splitBySemicolon(session.result.voiceImprovements || ''),
+      practiceRecommendations: this.splitBySemicolon(session.result.practiceRecommendations || ''),
+      learningResources: this.splitBySemicolon(session.result.learningResources || ''),
+      suggestedRole: session.result.suggestedRole || '',
+      suggestedDifficulty: session.result.suggestedDifficulty || '',
+      suggestedQuestionCount: session.result.suggestedQuestionCount || 0,
+      motivationalMessage: session.result.motivationalMessage || ''
+    };
+  });
+
+  private splitBySemicolon(text: string): string[] {
+    return text.split(';').map(s => s.trim()).filter(s => s.length > 0);
+  }
+
   readonly strengths = computed(() => {
     const session = this.session();
     if (!session?.result?.strengths) return [];

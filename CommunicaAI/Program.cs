@@ -73,6 +73,9 @@ builder.Services.AddScoped<IInterviewAnswerService, InterviewAnswerService>();
 builder.Services.AddScoped<IInterviewResultRepository, InterviewResultRepository>();
 builder.Services.AddScoped<IInterviewResultService, InterviewResultService>();
 
+// Video Analysis Module (Module 4)
+builder.Services.AddScoped<VideoAnalysisService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",

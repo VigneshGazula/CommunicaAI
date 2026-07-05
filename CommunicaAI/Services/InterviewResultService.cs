@@ -12,19 +12,22 @@ namespace CommunicaAI.Services
         private readonly IInterviewAnswerRepository _answerRepository;
         private readonly IAnswerEvaluationRepository _evaluationRepository;
         private readonly IGeminiService _geminiService;
+        private readonly IInterviewRepository _interviewRepository;
 
         public InterviewResultService(
             IInterviewResultRepository resultRepository,
             IInterviewQuestionRepository questionRepository,
             IInterviewAnswerRepository answerRepository,
             IAnswerEvaluationRepository evaluationRepository,
-            IGeminiService geminiService)
+            IGeminiService geminiService,
+            IInterviewRepository interviewRepository)
         {
             _resultRepository = resultRepository;
             _questionRepository = questionRepository;
             _answerRepository = answerRepository;
             _evaluationRepository = evaluationRepository;
             _geminiService = geminiService;
+            _interviewRepository = interviewRepository;
         }
 
         public async Task<InterviewResultResponse> GenerateResultAsync(Guid sessionId)
@@ -137,7 +140,99 @@ namespace CommunicaAI.Services
             };
 
             var created = await _resultRepository.CreateAsync(result);
+
+            // Generate AI Coaching Report (Module 5)
+            var interviewSession = await _interviewRepository.GetByIdAsync(sessionId);
+            if (interviewSession != null)
+            {
+                await GenerateCoachingReportAsync(created.Id, interviewSession, evaluations);
+            }
+
             return MapToResponse(created);
+        }
+
+        private async Task GenerateCoachingReportAsync(
+            Guid resultId,
+            InterviewSession session,
+            List<AnswerEvaluation> evaluations)
+        {
+            try
+            {
+                // Prepare question-answer pairs
+                var qaList = new List<QuestionAnswerPair>();
+                var answers = await _answerRepository.GetBySessionIdAsync(session.Id);
+                var questions = await _questionRepository.GetBySessionIdAsync(session.Id);
+
+                foreach (var answer in answers)
+                {
+                    var question = questions.FirstOrDefault(q => q.Id == answer.InterviewQuestionId);
+                    var evaluation = evaluations.FirstOrDefault(e => e.InterviewAnswerId == answer.Id);
+
+                    if (question != null && evaluation != null && !string.IsNullOrWhiteSpace(answer.Transcript))
+                    {
+                        qaList.Add(new QuestionAnswerPair
+                        {
+                            Question = question.QuestionText,
+                            Answer = answer.Transcript,
+                            TechnicalScore = evaluation.TechnicalScore,
+                            CommunicationScore = evaluation.CommunicationScore,
+                            GrammarScore = evaluation.GrammarScore,
+                            ConfidenceScore = evaluation.ConfidenceScore
+                        });
+                    }
+                }
+
+                if (qaList.Count == 0)
+                {
+                    return; // No data to coach on
+                }
+
+                // Prepare aggregate scores
+                var aggregateScores = new Dictionary<string, int>();
+                if (evaluations.Any())
+                {
+                    aggregateScores["Technical"] = (int)evaluations.Average(e => e.TechnicalScore);
+                    aggregateScores["Communication"] = (int)evaluations.Average(e => e.CommunicationScore);
+                    aggregateScores["Confidence"] = (int)evaluations.Average(e => e.ConfidenceScore);
+                    aggregateScores["Grammar"] = (int)evaluations.Average(e => e.GrammarScore);
+                    aggregateScores["Vocabulary"] = (int)evaluations.Average(e => e.VocabularyScore);
+                    aggregateScores["Professionalism"] = (int)evaluations.Average(e => e.ProfessionalismScore);
+                }
+
+                // Generate coaching report
+                var coachingReport = await _geminiService.GenerateCoachingReportAsync(
+                    session.Role,
+                    session.Difficulty,
+                    qaList,
+                    aggregateScores
+                );
+
+                // Update result with coaching data
+                var result = await _resultRepository.GetByIdAsync(resultId);
+                if (result != null)
+                {
+                    result.CoachingSummary = coachingReport.OverallSummary;
+                    result.CoachingStrengths = coachingReport.TopStrengths;
+                    result.CoachingWeaknesses = coachingReport.KeyWeaknesses;
+                    result.CommunicationImprovements = coachingReport.CommunicationImprovements;
+                    result.TechnicalImprovements = coachingReport.TechnicalImprovements;
+                    result.VideoImprovements = coachingReport.VideoImprovements;
+                    result.VoiceImprovements = coachingReport.VoiceImprovements;
+                    result.PracticeRecommendations = coachingReport.PracticeRecommendations;
+                    result.SuggestedRole = coachingReport.SuggestedRole;
+                    result.SuggestedDifficulty = coachingReport.SuggestedDifficulty;
+                    result.SuggestedQuestionCount = coachingReport.SuggestedQuestionCount;
+                    result.LearningResources = coachingReport.LearningResources;
+                    result.MotivationalMessage = coachingReport.MotivationalMessage;
+
+                    await _resultRepository.UpdateAsync(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the result generation
+                Console.WriteLine($"Failed to generate coaching report: {ex.Message}");
+            }
         }
 
         private static string GenerateRecommendations(int overallScore)
@@ -168,10 +263,29 @@ namespace CommunicaAI.Services
                 TechnicalScore = result.TechnicalScore,
                 CommunicationScore = result.CommunicationScore,
                 ConfidenceScore = result.ConfidenceScore,
+                EyeContactScore = result.EyeContactScore,
+                PostureScore = result.PostureScore,
+                FacialExpressionScore = result.FacialExpressionScore,
+                VideoConfidenceScore = result.VideoConfidenceScore,
+                VideoFeedback = result.VideoFeedback,
                 Strengths = result.Strengths,
                 Weaknesses = result.Weaknesses,
                 Recommendations = result.Recommendations,
-                Summary = result.Summary
+                Summary = result.Summary,
+                // AI Coach fields
+                CoachingSummary = result.CoachingSummary,
+                CoachingStrengths = result.CoachingStrengths,
+                CoachingWeaknesses = result.CoachingWeaknesses,
+                CommunicationImprovements = result.CommunicationImprovements,
+                TechnicalImprovements = result.TechnicalImprovements,
+                VideoImprovements = result.VideoImprovements,
+                VoiceImprovements = result.VoiceImprovements,
+                PracticeRecommendations = result.PracticeRecommendations,
+                SuggestedRole = result.SuggestedRole,
+                SuggestedDifficulty = result.SuggestedDifficulty,
+                SuggestedQuestionCount = result.SuggestedQuestionCount,
+                LearningResources = result.LearningResources,
+                MotivationalMessage = result.MotivationalMessage
             };
         }
     }

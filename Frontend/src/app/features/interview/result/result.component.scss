@@ -399,6 +399,86 @@
   }
 }
 
+// Video Intelligence Section (Module 4)
+.video-intelligence-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+}
+
+.video-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.video-score-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.video-score-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.video-score-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.video-score-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.video-score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.video-feedback {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 0.75rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  p {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin: 0;
+  }
+}
+
 .result-actions {
   display: flex;
   gap: 1rem;
@@ -450,4 +530,185 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+// AI Interview Coach Section (Module 5)
+.ai-coach-section {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.coach-summary {
+  background: var(--surface);
+  border-left: 4px solid var(--primary);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+
+  p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0;
+    font-style: italic;
+  }
+}
+
+.coach-cards {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.coach-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+
+  &[open] {
+    .coach-card-header::after {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.coach-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(168, 85, 247, 0.05);
+  }
+
+  &::after {
+    content: '▼';
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-bottom: 2px solid rgba(16, 185, 129, 0.3);
+  }
+
+  &.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-bottom: 2px solid rgba(245, 158, 11, 0.3);
+  }
+}
+
+.coach-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.coach-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.coach-card-content {
+  padding: 1.25rem;
+
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+
+    li {
+      padding-left: 1.5rem;
+      position: relative;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--text);
+
+      &::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: var(--primary);
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+.next-steps {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 1rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.next-interview-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.param-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.param-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.motivational-message {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+
+  p {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0;
+    font-weight: 500;
+    font-style: italic;
+  }
 }

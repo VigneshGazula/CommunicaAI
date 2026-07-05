@@ -63,6 +63,62 @@
         </div>
       </div>
 
+      <!-- Video Intelligence Scores (Module 4) -->
+      @if (hasVideoMetrics()) {
+        <div class="video-intelligence-section">
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Video Intelligence Analysis
+          </h2>
+          <div class="video-scores-grid">
+            <div class="video-score-card">
+              <div class="video-score-icon">👁️</div>
+              <div class="video-score-content">
+                <span class="video-score-label">Eye Contact</span>
+                <span class="video-score-value" [style.color]="getScoreColor(eyeContactScore())">
+                  {{ eyeContactScore() }}%
+                </span>
+              </div>
+            </div>
+            <div class="video-score-card">
+              <div class="video-score-icon">🧍</div>
+              <div class="video-score-content">
+                <span class="video-score-label">Posture</span>
+                <span class="video-score-value" [style.color]="getScoreColor(postureScore())">
+                  {{ postureScore() }}%
+                </span>
+              </div>
+            </div>
+            <div class="video-score-card">
+              <div class="video-score-icon">😊</div>
+              <div class="video-score-content">
+                <span class="video-score-label">Facial Expression</span>
+                <span class="video-score-value" [style.color]="getScoreColor(facialExpressionScore())">
+                  {{ facialExpressionScore() }}%
+                </span>
+              </div>
+            </div>
+            <div class="video-score-card">
+              <div class="video-score-icon">🎥</div>
+              <div class="video-score-content">
+                <span class="video-score-label">Video Confidence</span>
+                <span class="video-score-value" [style.color]="getScoreColor(videoConfidenceScore())">
+                  {{ videoConfidenceScore() }}%
+                </span>
+              </div>
+            </div>
+          </div>
+          @if (videoFeedback()) {
+            <div class="video-feedback">
+              <h4>Video Analysis Feedback</h4>
+              <p>{{ videoFeedback() }}</p>
+            </div>
+          }
+        </div>
+      }
+
       <div class="result-grid">
         <div class="result-card">
           <h3 class="card-title">
@@ -114,6 +170,180 @@
               <li>{{ rec }}</li>
             }
           </ul>
+        </div>
+      }
+
+      <!-- AI Interview Coach (Module 5) -->
+      @if (hasCoachingReport() && coachingData(); as coach) {
+        <div class="ai-coach-section">
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            AI Interview Coach
+          </h2>
+
+          @if (coach.summary) {
+            <div class="coach-summary">
+              <p>{{ coach.summary }}</p>
+            </div>
+          }
+
+          <div class="coach-cards">
+            @if (coach.strengths.length > 0) {
+              <details class="coach-card" open>
+                <summary class="coach-card-header success">
+                  <span class="coach-icon">💪</span>
+                  <span class="coach-title">Your Top Strengths</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.strengths; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.weaknesses.length > 0) {
+              <details class="coach-card">
+                <summary class="coach-card-header warning">
+                  <span class="coach-icon">🎯</span>
+                  <span class="coach-title">Areas to Improve</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.weaknesses; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.technicalImprovements.length > 0) {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">🔧</span>
+                  <span class="coach-title">Technical Improvements</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.technicalImprovements; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.communicationImprovements.length > 0) {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">💬</span>
+                  <span class="coach-title">Communication Tips</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.communicationImprovements; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.videoImprovements.length > 0 && coach.videoImprovements[0] !== 'Not applicable') {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">🎥</span>
+                  <span class="coach-title">Video Presence</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.videoImprovements; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.voiceImprovements.length > 0 && coach.voiceImprovements[0] !== 'Not applicable') {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">🎤</span>
+                  <span class="coach-title">Voice & Delivery</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.voiceImprovements; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.practiceRecommendations.length > 0) {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">📚</span>
+                  <span class="coach-title">Practice Recommendations</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.practiceRecommendations; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+
+            @if (coach.learningResources.length > 0) {
+              <details class="coach-card">
+                <summary class="coach-card-header">
+                  <span class="coach-icon">🔗</span>
+                  <span class="coach-title">Learning Resources</span>
+                </summary>
+                <div class="coach-card-content">
+                  <ul>
+                    @for (item of coach.learningResources; track item) {
+                      <li>{{ item }}</li>
+                    }
+                  </ul>
+                </div>
+              </details>
+            }
+          </div>
+
+          @if (coach.suggestedRole) {
+            <div class="next-steps">
+              <h4>Suggested Next Interview</h4>
+              <div class="next-interview-params">
+                <div class="param">
+                  <span class="param-label">Role:</span>
+                  <span class="param-value">{{ coach.suggestedRole }}</span>
+                </div>
+                <div class="param">
+                  <span class="param-label">Difficulty:</span>
+                  <span class="param-value">{{ coach.suggestedDifficulty }}</span>
+                </div>
+                <div class="param">
+                  <span class="param-label">Questions:</span>
+                  <span class="param-value">{{ coach.suggestedQuestionCount }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (coach.motivationalMessage) {
+            <div class="motivational-message">
+              <p>{{ coach.motivationalMessage }}</p>
+            </div>
+          }
         </div>
       }
 
