@@ -1,4 +1,5 @@
 ﻿using CommunicaAI.Services;
+using CommunicaAI.Models;
 
 namespace CommunicaAI.Services.Interfaces
 {
@@ -9,6 +10,13 @@ namespace CommunicaAI.Services.Interfaces
         string answer);
 
         Task<CoachingReport> GenerateCoachingReportAsync(
+            string role,
+            string difficulty,
+            List<QuestionAnswerPair> qaList,
+            Dictionary<string, int> aggregateScores);
+
+        Task<CompanyEvaluationResult> EvaluateCompanyFitAsync(
+            CompanyProfile companyProfile,
             string role,
             string difficulty,
             List<QuestionAnswerPair> qaList,

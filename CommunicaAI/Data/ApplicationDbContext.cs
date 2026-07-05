@@ -20,6 +20,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<AnswerEvaluation> AnswerEvaluations { get; set; }
 
+    public DbSet<CompanyProfile> CompanyProfiles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -106,6 +108,17 @@ public class ApplicationDbContext : DbContext
                   .WithOne()
                   .HasForeignKey<InterviewResult>(x => x.InterviewSessionId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CompanyProfile>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.CompanyName).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.InterviewStyle).IsRequired();
+            entity.Property(x => x.FocusAreas).IsRequired();
+            entity.Property(x => x.BehavioralExpectations).IsRequired();
+            entity.Property(x => x.TechnicalExpectations).IsRequired();
+            entity.Property(x => x.CommunicationExpectations).IsRequired();
         });
     }
 }

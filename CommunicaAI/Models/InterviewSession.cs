@@ -21,5 +21,8 @@
         public DateTime? CompletedAt { get; set; }
 
         public string Status { get; set; } = "InProgress";
+
+        // Module 6: Company Intelligence
+        public Guid? CompanyProfileId { get; set; }
     }
 }

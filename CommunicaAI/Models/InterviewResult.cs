@@ -69,6 +69,17 @@ public class InterviewResult
 
     public string MotivationalMessage { get; set; } = string.Empty;
 
+    // Company Intelligence (Module 6)
+    public int CompanyReadinessScore { get; set; }
+
+    public int TechnicalAlignment { get; set; }
+
+    public int CommunicationAlignment { get; set; }
+
+    public int CultureFit { get; set; }
+
+    public string CompanySpecificFeedback { get; set; } = string.Empty;
+
     public DateTime GeneratedAt { get; set; }
 
     // Navigation property

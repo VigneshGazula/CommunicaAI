@@ -42,7 +42,8 @@ namespace CommunicaAI.Services
                 QuestionCount = request.QuestionCount,
                 DurationMinutes = request.DurationMinutes,
                 StartedAt = DateTime.UtcNow,
-                Status = "InProgress"
+                Status = "InProgress",
+                CompanyProfileId = request.CompanyProfileId
             };
 
             var createdSession = await _interviewRepository.CreateAsync(session);

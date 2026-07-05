@@ -73,6 +73,9 @@ builder.Services.AddScoped<IInterviewAnswerService, InterviewAnswerService>();
 builder.Services.AddScoped<IInterviewResultRepository, InterviewResultRepository>();
 builder.Services.AddScoped<IInterviewResultService, InterviewResultService>();
 
+// Company Profile Module (Module 6)
+builder.Services.AddScoped<ICompanyProfileRepository, CompanyProfileRepository>();
+
 // Video Analysis Module (Module 4)
 builder.Services.AddScoped<VideoAnalysisService>();
 

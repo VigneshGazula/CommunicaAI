@@ -20,5 +20,8 @@ namespace CommunicaAI.DTO.Interview
         [Required]
         [Range(1, 180, ErrorMessage = "Duration must be between 1 and 180 minutes")]
         public int DurationMinutes { get; set; }
+
+        // Module 6: Company Intelligence (optional)
+        public Guid? CompanyProfileId { get; set; }
     }
 }

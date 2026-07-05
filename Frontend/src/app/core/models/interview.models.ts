@@ -6,6 +6,7 @@ export interface CreateInterviewRequest {
   difficulty: string;
   questionCount: number;
   durationMinutes: number;
+  companyProfileId?: string; // Module 6: Company Intelligence
 }
 
 export interface CreateInterviewResponse {
@@ -87,6 +88,12 @@ export interface InterviewResultResponse {
   suggestedQuestionCount?: number;
   learningResources?: string;
   motivationalMessage?: string;
+  // Company Intelligence (Module 6)
+  companyReadinessScore?: number;
+  technicalAlignment?: number;
+  communicationAlignment?: number;
+  cultureFit?: number;
+  companySpecificFeedback?: string;
 }
 
 export interface QuestionWithAnswerResponse {
@@ -196,6 +203,12 @@ export interface InterviewSession {
     suggestedQuestionCount?: number;
     learningResources?: string;
     motivationalMessage?: string;
+    // Company Intelligence (Module 6)
+    companyReadinessScore?: number;
+    technicalAlignment?: number;
+    communicationAlignment?: number;
+    cultureFit?: number;
+    companySpecificFeedback?: string;
   };
 }
 
@@ -214,4 +227,13 @@ export interface InterviewMetadata {
   roles: string[];
   difficulties: string[];
   categories: string[];
+}
+
+
+// Company Intelligence (Module 6)
+export interface CompanyProfile {
+  id: string;
+  companyName: string;
+  interviewStyle: string;
+  focusAreas: string;
 }

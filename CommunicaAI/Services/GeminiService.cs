@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using CommunicaAI.Configurations;
+using CommunicaAI.Models;
 using CommunicaAI.Services.Interfaces;
 using Microsoft.Extensions.Options;
 
@@ -402,6 +403,152 @@ Important: All text fields must be single strings with items separated by semico
         }
         return string.Empty;
     }
+
+    public async Task<CompanyEvaluationResult> EvaluateCompanyFitAsync(
+        CompanyProfile companyProfile,
+        string role,
+        string difficulty,
+        List<QuestionAnswerPair> qaList,
+        Dictionary<string, int> aggregateScores)
+    {
+        var qaDetails = string.Join("\n", qaList.Select((qa, idx) => $@"
+Question {idx + 1}: {qa.Question}
+Answer: {qa.Answer}
+Technical: {qa.TechnicalScore}, Communication: {qa.CommunicationScore}, Grammar: {qa.GrammarScore}, Confidence: {qa.ConfidenceScore}
+"));
+
+        var scoresText = string.Join(", ", aggregateScores.Select(kv => $"{kv.Key}: {kv.Value}"));
+
+        var prompt = $@"
+You are a senior hiring manager evaluating a candidate's fit for {companyProfile.CompanyName}.
+
+COMPANY PROFILE:
+Company Name: {companyProfile.CompanyName}
+Interview Style: {companyProfile.InterviewStyle}
+Focus Areas: {companyProfile.FocusAreas}
+Behavioral Expectations: {companyProfile.BehavioralExpectations}
+Technical Expectations: {companyProfile.TechnicalExpectations}
+Communication Expectations: {companyProfile.CommunicationExpectations}
+
+CANDIDATE INTERVIEW:
+Role: {role}
+Difficulty: {difficulty}
+Questions Answered: {qaList.Count}
+Aggregate Scores: {scoresText}
+
+QUESTION-ANSWER DETAILS:
+{qaDetails}
+
+Evaluate how well the candidate fits this specific company's culture, technical requirements, and communication style.
+
+Return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+{{
+  ""companyReadinessScore"": <number 0-100 representing overall readiness for this company>,
+  ""technicalAlignment"": <number 0-100 representing alignment with company's technical expectations>,
+  ""communicationAlignment"": <number 0-100 representing alignment with communication style>,
+  ""cultureFit"": <number 0-100 representing cultural fit based on behavioral expectations>,
+  ""companySpecificFeedback"": ""<2-3 sentences explaining why this candidate is or isn't a good fit for {companyProfile.CompanyName} specifically>""
+}}
+
+Consider:
+- Does the candidate's technical approach match the company's expectations?
+- Does their communication style align with what the company values?
+- Do their behavioral responses fit the company culture?
+- How ready are they for this specific company's interview process?
+
+Return only the JSON object.";
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var request = new
+                {
+                    contents = new[]
+                    {
+                        new
+                        {
+                            parts = new[]
+                            {
+                                new
+                                {
+                                    text = prompt
+                                }
+                            }
+                        }
+                    }
+                };
+
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+                
+                var httpResponse = await _httpClient.PostAsJsonAsync(url, request);
+                
+                if (httpResponse.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                    continue;
+                }
+                
+                httpResponse.EnsureSuccessStatusCode();
+                
+                var json = await httpResponse.Content.ReadAsStringAsync();
+                using var document = JsonDocument.Parse(json);
+                
+                var aiResponse = document.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+                
+                var cleanedResponse = aiResponse!.Trim();
+
+                if (cleanedResponse.StartsWith("```json"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(7);
+                }
+                if (cleanedResponse.StartsWith("```"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(3);
+                }
+                if (cleanedResponse.EndsWith("```"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(0, cleanedResponse.Length - 3);
+                }
+                cleanedResponse = cleanedResponse.Trim();
+
+                using var doc = JsonDocument.Parse(cleanedResponse);
+                var root = doc.RootElement;
+
+                return new CompanyEvaluationResult
+                {
+                    CompanyReadinessScore = GetIntProperty(root, "companyReadinessScore", 0),
+                    TechnicalAlignment = GetIntProperty(root, "technicalAlignment", 0),
+                    CommunicationAlignment = GetIntProperty(root, "communicationAlignment", 0),
+                    CultureFit = GetIntProperty(root, "cultureFit", 0),
+                    CompanySpecificFeedback = GetStringProperty(root, "companySpecificFeedback")
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Company evaluation attempt {attempt} failed: {ex.Message}");
+                if (attempt == 3)
+                {
+                    return new CompanyEvaluationResult
+                    {
+                        CompanyReadinessScore = aggregateScores.GetValueOrDefault("Technical", 0),
+                        TechnicalAlignment = aggregateScores.GetValueOrDefault("Technical", 0),
+                        CommunicationAlignment = aggregateScores.GetValueOrDefault("Communication", 0),
+                        CultureFit = aggregateScores.GetValueOrDefault("Professionalism", 0),
+                        CompanySpecificFeedback = $"Based on your performance, you show potential for {companyProfile.CompanyName}. Continue developing your technical and communication skills."
+                    };
+                }
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+            }
+        }
+
+        return new CompanyEvaluationResult();
+    }
 }
 
 // Supporting DTOs for coaching
@@ -430,4 +577,14 @@ public class CoachingReport
     public int SuggestedQuestionCount { get; set; }
     public string LearningResources { get; set; } = string.Empty;
     public string MotivationalMessage { get; set; } = string.Empty;
+}
+
+
+public class CompanyEvaluationResult
+{
+    public int CompanyReadinessScore { get; set; }
+    public int TechnicalAlignment { get; set; }
+    public int CommunicationAlignment { get; set; }
+    public int CultureFit { get; set; }
+    public string CompanySpecificFeedback { get; set; } = string.Empty;
 }

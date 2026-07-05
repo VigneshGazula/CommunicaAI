@@ -14,7 +14,8 @@ import {
   QuestionWithAnswerResponse,
   SubmitAudioAnswerResponse,
   InterviewHistoryResponse,
-  InterviewMetadata
+  InterviewMetadata,
+  CompanyProfile
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
@@ -22,18 +23,20 @@ export class InterviewService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiBaseUrl}/api/interviews`;
   private readonly questionBankUrl = `${environment.apiBaseUrl}/api/question-bank`;
+  private readonly companyUrl = `${environment.apiBaseUrl}/api/company`;
   
   // Store current session in memory (not localStorage)
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
   public currentSession$ = this.currentSessionSubject.asObservable();
 
-  createSession(setup: InterviewSetup): Observable<InterviewSession> {
+  createSession(setup: InterviewSetup, companyProfileId?: string): Observable<InterviewSession> {
     const request: CreateInterviewRequest = {
       role: setup.role,
       topic: setup.topic,
       difficulty: setup.difficulty,
       questionCount: setup.questionCount,
-      durationMinutes: setup.duration
+      durationMinutes: setup.duration,
+      companyProfileId: companyProfileId
     };
 
     return this.http.post<CreateInterviewResponse>(this.apiUrl, request).pipe(

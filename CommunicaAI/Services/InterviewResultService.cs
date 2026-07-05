@@ -13,6 +13,7 @@ namespace CommunicaAI.Services
         private readonly IAnswerEvaluationRepository _evaluationRepository;
         private readonly IGeminiService _geminiService;
         private readonly IInterviewRepository _interviewRepository;
+        private readonly ICompanyProfileRepository _companyRepository;
 
         public InterviewResultService(
             IInterviewResultRepository resultRepository,
@@ -20,7 +21,8 @@ namespace CommunicaAI.Services
             IInterviewAnswerRepository answerRepository,
             IAnswerEvaluationRepository evaluationRepository,
             IGeminiService geminiService,
-            IInterviewRepository interviewRepository)
+            IInterviewRepository interviewRepository,
+            ICompanyProfileRepository companyRepository)
         {
             _resultRepository = resultRepository;
             _questionRepository = questionRepository;
@@ -28,6 +30,7 @@ namespace CommunicaAI.Services
             _evaluationRepository = evaluationRepository;
             _geminiService = geminiService;
             _interviewRepository = interviewRepository;
+            _companyRepository = companyRepository;
         }
 
         public async Task<InterviewResultResponse> GenerateResultAsync(Guid sessionId)
@@ -146,6 +149,12 @@ namespace CommunicaAI.Services
             if (interviewSession != null)
             {
                 await GenerateCoachingReportAsync(created.Id, interviewSession, evaluations);
+                
+                // Generate Company Intelligence Report (Module 6)
+                if (interviewSession.CompanyProfileId.HasValue)
+                {
+                    await GenerateCompanyEvaluationAsync(created.Id, interviewSession, evaluations);
+                }
             }
 
             return MapToResponse(created);
@@ -235,6 +244,89 @@ namespace CommunicaAI.Services
             }
         }
 
+        private async Task GenerateCompanyEvaluationAsync(
+            Guid resultId,
+            InterviewSession session,
+            List<AnswerEvaluation> evaluations)
+        {
+            try
+            {
+                var companyProfile = await _companyRepository.GetByIdAsync(session.CompanyProfileId!.Value);
+                if (companyProfile == null)
+                {
+                    return;
+                }
+
+                // Prepare question-answer pairs
+                var qaList = new List<QuestionAnswerPair>();
+                var answers = await _answerRepository.GetBySessionIdAsync(session.Id);
+                var questions = await _questionRepository.GetBySessionIdAsync(session.Id);
+
+                foreach (var answer in answers)
+                {
+                    var question = questions.FirstOrDefault(q => q.Id == answer.InterviewQuestionId);
+                    var evaluation = evaluations.FirstOrDefault(e => e.InterviewAnswerId == answer.Id);
+
+                    if (question != null && evaluation != null && !string.IsNullOrWhiteSpace(answer.Transcript))
+                    {
+                        qaList.Add(new QuestionAnswerPair
+                        {
+                            Question = question.QuestionText,
+                            Answer = answer.Transcript,
+                            TechnicalScore = evaluation.TechnicalScore,
+                            CommunicationScore = evaluation.CommunicationScore,
+                            GrammarScore = evaluation.GrammarScore,
+                            ConfidenceScore = evaluation.ConfidenceScore
+                        });
+                    }
+                }
+
+                if (qaList.Count == 0)
+                {
+                    return;
+                }
+
+                // Prepare aggregate scores
+                var aggregateScores = new Dictionary<string, int>();
+                if (evaluations.Any())
+                {
+                    aggregateScores["Technical"] = (int)evaluations.Average(e => e.TechnicalScore);
+                    aggregateScores["Communication"] = (int)evaluations.Average(e => e.CommunicationScore);
+                    aggregateScores["Confidence"] = (int)evaluations.Average(e => e.ConfidenceScore);
+                    aggregateScores["Grammar"] = (int)evaluations.Average(e => e.GrammarScore);
+                    aggregateScores["Vocabulary"] = (int)evaluations.Average(e => e.VocabularyScore);
+                    aggregateScores["Professionalism"] = (int)evaluations.Average(e => e.ProfessionalismScore);
+                }
+
+                // Generate company evaluation
+                var companyEvaluation = await _geminiService.EvaluateCompanyFitAsync(
+                    companyProfile,
+                    session.Role,
+                    session.Difficulty,
+                    qaList,
+                    aggregateScores
+                );
+
+                // Update result with company evaluation data
+                var result = await _resultRepository.GetByIdAsync(resultId);
+                if (result != null)
+                {
+                    result.CompanyReadinessScore = companyEvaluation.CompanyReadinessScore;
+                    result.TechnicalAlignment = companyEvaluation.TechnicalAlignment;
+                    result.CommunicationAlignment = companyEvaluation.CommunicationAlignment;
+                    result.CultureFit = companyEvaluation.CultureFit;
+                    result.CompanySpecificFeedback = companyEvaluation.CompanySpecificFeedback;
+
+                    await _resultRepository.UpdateAsync(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the result generation
+                Console.WriteLine($"Failed to generate company evaluation: {ex.Message}");
+            }
+        }
+
         private static string GenerateRecommendations(int overallScore)
         {
             if (overallScore >= 80)
@@ -285,7 +377,13 @@ namespace CommunicaAI.Services
                 SuggestedDifficulty = result.SuggestedDifficulty,
                 SuggestedQuestionCount = result.SuggestedQuestionCount,
                 LearningResources = result.LearningResources,
-                MotivationalMessage = result.MotivationalMessage
+                MotivationalMessage = result.MotivationalMessage,
+                // Company Intelligence (Module 6)
+                CompanyReadinessScore = result.CompanyReadinessScore,
+                TechnicalAlignment = result.TechnicalAlignment,
+                CommunicationAlignment = result.CommunicationAlignment,
+                CultureFit = result.CultureFit,
+                CompanySpecificFeedback = result.CompanySpecificFeedback
             };
         }
     }
