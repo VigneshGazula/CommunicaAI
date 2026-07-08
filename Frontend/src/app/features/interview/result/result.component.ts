@@ -132,6 +132,27 @@ export class ResultComponent implements OnInit {
     return session?.result?.companySpecificFeedback ?? '';
   });
 
+  // Resume Intelligence (Module 7)
+  readonly hasResumeAnalysis = computed(() => {
+    const session = this.session();
+    return (session?.result?.resumeMatchScore ?? 0) > 0;
+  });
+
+  readonly resumeMatchScore = computed(() => {
+    const session = this.session();
+    return session?.result?.resumeMatchScore ?? 0;
+  });
+
+  readonly skillGapSummary = computed(() => {
+    const session = this.session();
+    return session?.result?.skillGapSummary ?? '';
+  });
+
+  readonly careerRecommendations = computed(() => {
+    const session = this.session();
+    return session?.result?.careerRecommendations ?? '';
+  });
+
   private splitBySemicolon(text: string): string[] {
     return text.split(';').map(s => s.trim()).filter(s => s.length > 0);
   }

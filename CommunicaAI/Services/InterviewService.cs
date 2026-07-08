@@ -43,7 +43,8 @@ namespace CommunicaAI.Services
                 DurationMinutes = request.DurationMinutes,
                 StartedAt = DateTime.UtcNow,
                 Status = "InProgress",
-                CompanyProfileId = request.CompanyProfileId
+                CompanyProfileId = request.CompanyProfileId,
+                ResumeProfileId = request.ResumeProfileId
             };
 
             var createdSession = await _interviewRepository.CreateAsync(session);

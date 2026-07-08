@@ -21,5 +21,12 @@ namespace CommunicaAI.Services.Interfaces
             string difficulty,
             List<QuestionAnswerPair> qaList,
             Dictionary<string, int> aggregateScores);
+
+        Task<ResumeAnalysisResult> AnalyzeResumeMatchAsync(
+            ResumeProfile resumeProfile,
+            string role,
+            string difficulty,
+            List<QuestionAnswerPair> qaList,
+            Dictionary<string, int> aggregateScores);
     }
 }

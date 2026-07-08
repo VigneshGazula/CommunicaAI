@@ -14,6 +14,7 @@ namespace CommunicaAI.Services
         private readonly IGeminiService _geminiService;
         private readonly IInterviewRepository _interviewRepository;
         private readonly ICompanyProfileRepository _companyRepository;
+        private readonly IResumeProfileRepository _resumeRepository;
 
         public InterviewResultService(
             IInterviewResultRepository resultRepository,
@@ -22,7 +23,8 @@ namespace CommunicaAI.Services
             IAnswerEvaluationRepository evaluationRepository,
             IGeminiService geminiService,
             IInterviewRepository interviewRepository,
-            ICompanyProfileRepository companyRepository)
+            ICompanyProfileRepository companyRepository,
+            IResumeProfileRepository resumeRepository)
         {
             _resultRepository = resultRepository;
             _questionRepository = questionRepository;
@@ -31,6 +33,7 @@ namespace CommunicaAI.Services
             _geminiService = geminiService;
             _interviewRepository = interviewRepository;
             _companyRepository = companyRepository;
+            _resumeRepository = resumeRepository;
         }
 
         public async Task<InterviewResultResponse> GenerateResultAsync(Guid sessionId)
@@ -154,6 +157,12 @@ namespace CommunicaAI.Services
                 if (interviewSession.CompanyProfileId.HasValue)
                 {
                     await GenerateCompanyEvaluationAsync(created.Id, interviewSession, evaluations);
+                }
+
+                // Generate Resume Intelligence Report (Module 7)
+                if (interviewSession.ResumeProfileId.HasValue)
+                {
+                    await GenerateResumeAnalysisAsync(created.Id, interviewSession, evaluations);
                 }
             }
 
@@ -327,6 +336,87 @@ namespace CommunicaAI.Services
             }
         }
 
+        private async Task GenerateResumeAnalysisAsync(
+            Guid resultId,
+            InterviewSession session,
+            List<AnswerEvaluation> evaluations)
+        {
+            try
+            {
+                var resumeProfile = await _resumeRepository.GetByIdAsync(session.ResumeProfileId!.Value);
+                if (resumeProfile == null)
+                {
+                    return;
+                }
+
+                // Prepare question-answer pairs
+                var qaList = new List<QuestionAnswerPair>();
+                var answers = await _answerRepository.GetBySessionIdAsync(session.Id);
+                var questions = await _questionRepository.GetBySessionIdAsync(session.Id);
+
+                foreach (var answer in answers)
+                {
+                    var question = questions.FirstOrDefault(q => q.Id == answer.InterviewQuestionId);
+                    var evaluation = evaluations.FirstOrDefault(e => e.InterviewAnswerId == answer.Id);
+
+                    if (question != null && evaluation != null && !string.IsNullOrWhiteSpace(answer.Transcript))
+                    {
+                        qaList.Add(new QuestionAnswerPair
+                        {
+                            Question = question.QuestionText,
+                            Answer = answer.Transcript,
+                            TechnicalScore = evaluation.TechnicalScore,
+                            CommunicationScore = evaluation.CommunicationScore,
+                            GrammarScore = evaluation.GrammarScore,
+                            ConfidenceScore = evaluation.ConfidenceScore
+                        });
+                    }
+                }
+
+                if (qaList.Count == 0)
+                {
+                    return;
+                }
+
+                // Prepare aggregate scores
+                var aggregateScores = new Dictionary<string, int>();
+                if (evaluations.Any())
+                {
+                    aggregateScores["Technical"] = (int)evaluations.Average(e => e.TechnicalScore);
+                    aggregateScores["Communication"] = (int)evaluations.Average(e => e.CommunicationScore);
+                    aggregateScores["Confidence"] = (int)evaluations.Average(e => e.ConfidenceScore);
+                    aggregateScores["Grammar"] = (int)evaluations.Average(e => e.GrammarScore);
+                    aggregateScores["Vocabulary"] = (int)evaluations.Average(e => e.VocabularyScore);
+                    aggregateScores["Professionalism"] = (int)evaluations.Average(e => e.ProfessionalismScore);
+                }
+
+                // Generate resume analysis
+                var resumeAnalysis = await _geminiService.AnalyzeResumeMatchAsync(
+                    resumeProfile,
+                    session.Role,
+                    session.Difficulty,
+                    qaList,
+                    aggregateScores
+                );
+
+                // Update result with resume analysis data
+                var result = await _resultRepository.GetByIdAsync(resultId);
+                if (result != null)
+                {
+                    result.ResumeMatchScore = resumeAnalysis.ResumeMatchScore;
+                    result.SkillGapSummary = resumeAnalysis.SkillGapSummary;
+                    result.CareerRecommendations = resumeAnalysis.CareerRecommendations;
+
+                    await _resultRepository.UpdateAsync(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the result generation
+                Console.WriteLine($"Failed to generate resume analysis: {ex.Message}");
+            }
+        }
+
         private static string GenerateRecommendations(int overallScore)
         {
             if (overallScore >= 80)
@@ -383,7 +473,11 @@ namespace CommunicaAI.Services
                 TechnicalAlignment = result.TechnicalAlignment,
                 CommunicationAlignment = result.CommunicationAlignment,
                 CultureFit = result.CultureFit,
-                CompanySpecificFeedback = result.CompanySpecificFeedback
+                CompanySpecificFeedback = result.CompanySpecificFeedback,
+                // Resume Intelligence (Module 7)
+                ResumeMatchScore = result.ResumeMatchScore,
+                SkillGapSummary = result.SkillGapSummary,
+                CareerRecommendations = result.CareerRecommendations
             };
         }
     }

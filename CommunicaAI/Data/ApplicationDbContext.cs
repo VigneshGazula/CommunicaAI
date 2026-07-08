@@ -22,6 +22,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<CompanyProfile> CompanyProfiles { get; set; }
 
+    public DbSet<ResumeProfile> ResumeProfiles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -119,6 +121,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(x => x.BehavioralExpectations).IsRequired();
             entity.Property(x => x.TechnicalExpectations).IsRequired();
             entity.Property(x => x.CommunicationExpectations).IsRequired();
+        });
+
+        modelBuilder.Entity<ResumeProfile>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.UserId);
+            entity.Property(x => x.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(x => x.ResumeUrl).IsRequired().HasMaxLength(500);
+            entity.Property(x => x.FileType).IsRequired().HasMaxLength(50);
         });
     }
 }

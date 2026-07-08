@@ -58,6 +58,53 @@
         </div>
 
         <div class="field">
+          <label for="resume">Upload Resume (Optional)</label>
+          <input 
+            type="file" 
+            id="resume" 
+            accept=".pdf,.docx" 
+            (change)="onResumeSelected($event)"
+            [disabled]="resumeUploading()"
+            class="file-input"
+          />
+          <small class="field-hint">Upload your resume for personalized interview questions</small>
+          
+          @if (resumeUploading()) {
+            <div class="resume-status uploading">Analyzing resume...</div>
+          }
+          
+          @if (resumeError()) {
+            <div class="resume-status error">{{ resumeError() }}</div>
+          }
+          
+          @if (uploadedResume()) {
+            <div class="resume-preview">
+              <div class="resume-preview-header">
+                <span class="resume-icon">📄</span>
+                <span class="resume-title">Resume Analyzed</span>
+                <button type="button" class="btn-clear" (click)="clearResume()">×</button>
+              </div>
+              <div class="resume-preview-content">
+                <div class="resume-field">
+                  <strong>Experience:</strong> {{ uploadedResume()!.experience }}
+                </div>
+                @if (uploadedResume()!.skills.length > 0) {
+                  <div class="resume-field">
+                    <strong>Skills:</strong> {{ uploadedResume()!.skills.slice(0, 5).join(', ') }}
+                    @if (uploadedResume()!.skills.length > 5) {
+                      <span> +{{ uploadedResume()!.skills.length - 5 }} more</span>
+                    }
+                  </div>
+                }
+                <div class="resume-field">
+                  <small>{{ uploadedResume()!.summary }}</small>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="field">
           <label for="duration">Duration (minutes)</label>
           <input type="number" id="duration" formControlName="duration" min="5" max="60" />
           @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['min']) {

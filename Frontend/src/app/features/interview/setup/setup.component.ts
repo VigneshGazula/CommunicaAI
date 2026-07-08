@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { InterviewService } from '../../../core/services/interview.service';
-import { CompanyProfile } from '../../../core/models/interview.models';
+import { CompanyProfile, ResumeMetadata } from '../../../core/models/interview.models';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -25,6 +25,10 @@ export class SetupComponent implements OnInit {
   readonly roles = signal<string[]>([]);
   readonly difficulties = signal<string[]>([]);
   readonly companies = signal<CompanyProfile[]>([]);
+  readonly uploadedResume = signal<ResumeMetadata | null>(null);
+  readonly resumeUploading = signal(false);
+  readonly resumeError = signal('');
+  readonly uploadedResumeId = signal<string | null>(null);
 
   readonly setupForm = this.fb.nonNullable.group({
     role: ['', Validators.required],
@@ -32,7 +36,8 @@ export class SetupComponent implements OnInit {
     difficulty: ['' as 'easy' | 'medium' | 'hard', Validators.required],
     duration: [15, [Validators.required, Validators.min(5), Validators.max(60)]],
     questionCount: [5, [Validators.required, Validators.min(1), Validators.max(20)]],
-    companyProfileId: ['']
+    companyProfileId: [''],
+    resumeProfileId: ['']
   });
 
   ngOnInit(): void {
@@ -79,6 +84,54 @@ export class SetupComponent implements OnInit {
     });
   }
 
+  onResumeSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        this.resumeError.set('Only PDF and DOCX files are supported');
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.resumeError.set('File size must be less than 5MB');
+        return;
+      }
+
+      this.uploadResume(file);
+    }
+  }
+
+  private uploadResume(file: File): void {
+    this.resumeUploading.set(true);
+    this.resumeError.set('');
+
+    this.interviewService.uploadResume(file).subscribe({
+      next: (response) => {
+        this.uploadedResume.set(response.metadata);
+        this.uploadedResumeId.set(response.resumeId);
+        this.setupForm.patchValue({ resumeProfileId: response.resumeId });
+        this.resumeUploading.set(false);
+      },
+      error: (err) => {
+        console.error('Resume upload failed:', err);
+        this.resumeError.set(err.error?.message || 'Failed to upload resume. Please try again.');
+        this.resumeUploading.set(false);
+      }
+    });
+  }
+
+  clearResume(): void {
+    this.uploadedResume.set(null);
+    this.uploadedResumeId.set(null);
+    this.setupForm.patchValue({ resumeProfileId: '' });
+    this.resumeError.set('');
+  }
+
   submit(): void {
     if (this.setupForm.invalid) {
       this.setupForm.markAllAsTouched();
@@ -97,8 +150,9 @@ export class SetupComponent implements OnInit {
       questionCount: formValue.questionCount
     };
     const companyProfileId = formValue.companyProfileId || undefined;
+    const resumeProfileId = formValue.resumeProfileId || undefined;
 
-    this.interviewService.createSession(setup, companyProfileId).subscribe({
+    this.interviewService.createSession(setup, companyProfileId, resumeProfileId).subscribe({
       next: (session) => {
         this.router.navigate(['/interview/live', session.id]);
       },

@@ -7,6 +7,7 @@ export interface CreateInterviewRequest {
   questionCount: number;
   durationMinutes: number;
   companyProfileId?: string; // Module 6: Company Intelligence
+  resumeProfileId?: string; // Module 7: Resume Intelligence
 }
 
 export interface CreateInterviewResponse {
@@ -94,6 +95,10 @@ export interface InterviewResultResponse {
   communicationAlignment?: number;
   cultureFit?: number;
   companySpecificFeedback?: string;
+  // Resume Intelligence (Module 7)
+  resumeMatchScore?: number;
+  skillGapSummary?: string;
+  careerRecommendations?: string;
 }
 
 export interface QuestionWithAnswerResponse {
@@ -209,6 +214,10 @@ export interface InterviewSession {
     communicationAlignment?: number;
     cultureFit?: number;
     companySpecificFeedback?: string;
+    // Resume Intelligence (Module 7)
+    resumeMatchScore?: number;
+    skillGapSummary?: string;
+    careerRecommendations?: string;
   };
 }
 
@@ -236,4 +245,29 @@ export interface CompanyProfile {
   companyName: string;
   interviewStyle: string;
   focusAreas: string;
+}
+
+
+// Resume Intelligence (Module 7)
+export interface ResumeMetadata {
+  skills: string[];
+  experience: string;
+  education: string[];
+  jobTitles: string[];
+  technologies: string[];
+  summary: string;
+}
+
+export interface UploadResumeResponse {
+  resumeId: string;
+  fileName: string;
+  metadata: ResumeMetadata;
+}
+
+export interface ResumeProfile {
+  id: string;
+  fileName: string;
+  experience: string;
+  skills: string[];
+  uploadedAt: string;
 }

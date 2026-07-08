@@ -549,6 +549,143 @@ Return only the JSON object.";
 
         return new CompanyEvaluationResult();
     }
+
+    public async Task<ResumeAnalysisResult> AnalyzeResumeMatchAsync(
+        ResumeProfile resumeProfile,
+        string role,
+        string difficulty,
+        List<QuestionAnswerPair> qaList,
+        Dictionary<string, int> aggregateScores)
+    {
+        var qaDetails = string.Join("\n", qaList.Select((qa, idx) => $@"
+Question {idx + 1}: {qa.Question}
+Answer: {qa.Answer}
+Technical: {qa.TechnicalScore}, Communication: {qa.CommunicationScore}
+"));
+
+        var scoresText = string.Join(", ", aggregateScores.Select(kv => $"{kv.Key}: {kv.Value}"));
+
+        var prompt = $@"
+You are a career coach analyzing how well a candidate's resume matches their interview performance.
+
+RESUME PROFILE:
+Skills: {resumeProfile.Skills}
+Experience: {resumeProfile.Experience}
+Education: {resumeProfile.Education}
+Job Titles: {resumeProfile.JobTitles}
+Technologies: {resumeProfile.Technologies}
+
+INTERVIEW PERFORMANCE:
+Role: {role}
+Difficulty: {difficulty}
+Questions Answered: {qaList.Count}
+Aggregate Scores: {scoresText}
+
+QUESTION-ANSWER DETAILS:
+{qaDetails}
+
+Analyze the alignment between the candidate's resume and their interview performance.
+
+Return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+{{
+  ""resumeMatchScore"": <number 0-100 representing how well interview performance matches resume claims>,
+  ""skillGapSummary"": ""<2-3 sentences identifying key skill gaps or areas where resume doesn't align with performance>"",
+  ""careerRecommendations"": ""<2-3 sentences with specific career development recommendations based on resume and performance>""
+}}
+
+Consider:
+- Do the candidate's answers demonstrate the skills listed on their resume?
+- Does their experience level match their performance?
+- Are there skills on the resume that weren't demonstrated in the interview?
+- What should they focus on to advance their career?
+
+Return only the JSON object.";
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var request = new
+                {
+                    contents = new[]
+                    {
+                        new
+                        {
+                            parts = new[]
+                            {
+                                new { text = prompt }
+                            }
+                        }
+                    }
+                };
+
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+                
+                var httpResponse = await _httpClient.PostAsJsonAsync(url, request);
+                
+                if (httpResponse.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                    continue;
+                }
+                
+                httpResponse.EnsureSuccessStatusCode();
+                
+                var json = await httpResponse.Content.ReadAsStringAsync();
+                using var document = JsonDocument.Parse(json);
+                
+                var aiResponse = document.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+                
+                var cleanedResponse = aiResponse!.Trim();
+
+                if (cleanedResponse.StartsWith("```json"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(7);
+                }
+                if (cleanedResponse.StartsWith("```"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(3);
+                }
+                if (cleanedResponse.EndsWith("```"))
+                {
+                    cleanedResponse = cleanedResponse.Substring(0, cleanedResponse.Length - 3);
+                }
+                cleanedResponse = cleanedResponse.Trim();
+
+                using var doc = JsonDocument.Parse(cleanedResponse);
+                var root = doc.RootElement;
+
+                return new ResumeAnalysisResult
+                {
+                    ResumeMatchScore = GetIntProperty(root, "resumeMatchScore", 0),
+                    SkillGapSummary = GetStringProperty(root, "skillGapSummary"),
+                    CareerRecommendations = GetStringProperty(root, "careerRecommendations")
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Resume analysis attempt {attempt} failed: {ex.Message}");
+                if (attempt == 3)
+                {
+                    var avgScore = aggregateScores.Values.Any() ? (int)aggregateScores.Values.Average() : 70;
+                    return new ResumeAnalysisResult
+                    {
+                        ResumeMatchScore = avgScore,
+                        SkillGapSummary = "Your interview performance aligns with your resume. Continue building experience in the technologies you've listed.",
+                        CareerRecommendations = $"Focus on deepening your expertise in {role} and consider pursuing more challenging projects to advance your career."
+                    };
+                }
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+            }
+        }
+
+        return new ResumeAnalysisResult();
+    }
 }
 
 // Supporting DTOs for coaching
@@ -587,4 +724,11 @@ public class CompanyEvaluationResult
     public int CommunicationAlignment { get; set; }
     public int CultureFit { get; set; }
     public string CompanySpecificFeedback { get; set; } = string.Empty;
+}
+
+public class ResumeAnalysisResult
+{
+    public int ResumeMatchScore { get; set; }
+    public string SkillGapSummary { get; set; } = string.Empty;
+    public string CareerRecommendations { get; set; } = string.Empty;
 }

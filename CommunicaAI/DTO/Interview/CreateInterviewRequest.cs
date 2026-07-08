@@ -23,5 +23,8 @@ namespace CommunicaAI.DTO.Interview
 
         // Module 6: Company Intelligence (optional)
         public Guid? CompanyProfileId { get; set; }
+
+        // Module 7: Resume Intelligence (optional)
+        public Guid? ResumeProfileId { get; set; }
     }
 }

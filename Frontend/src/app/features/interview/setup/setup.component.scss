@@ -63,3 +63,97 @@
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
+
+.file-input {
+  padding: 0.625rem;
+  cursor: pointer;
+}
+
+.resume-status {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+
+  &.uploading {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary);
+  }
+
+  &.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+}
+
+.resume-preview {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.resume-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-bottom: 1px solid var(--border);
+
+  .resume-icon {
+    font-size: 1.25rem;
+  }
+
+  .resume-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  .btn-clear {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text);
+    }
+  }
+}
+
+.resume-preview-content {
+  padding: 0.75rem;
+}
+
+.resume-field {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  strong {
+    color: var(--text);
+  }
+
+  small {
+    color: var(--text-muted);
+    display: block;
+    margin-top: 0.25rem;
+  }
+}

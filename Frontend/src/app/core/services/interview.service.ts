@@ -15,7 +15,9 @@ import {
   SubmitAudioAnswerResponse,
   InterviewHistoryResponse,
   InterviewMetadata,
-  CompanyProfile
+  CompanyProfile,
+  UploadResumeResponse,
+  ResumeProfile
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
@@ -24,19 +26,21 @@ export class InterviewService {
   private readonly apiUrl = `${environment.apiBaseUrl}/api/interviews`;
   private readonly questionBankUrl = `${environment.apiBaseUrl}/api/question-bank`;
   private readonly companyUrl = `${environment.apiBaseUrl}/api/company`;
+  private readonly resumeUrl = `${environment.apiBaseUrl}/api/resume`;
   
   // Store current session in memory (not localStorage)
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
   public currentSession$ = this.currentSessionSubject.asObservable();
 
-  createSession(setup: InterviewSetup, companyProfileId?: string): Observable<InterviewSession> {
+  createSession(setup: InterviewSetup, companyProfileId?: string, resumeProfileId?: string): Observable<InterviewSession> {
     const request: CreateInterviewRequest = {
       role: setup.role,
       topic: setup.topic,
       difficulty: setup.difficulty,
       questionCount: setup.questionCount,
       durationMinutes: setup.duration,
-      companyProfileId: companyProfileId
+      companyProfileId: companyProfileId,
+      resumeProfileId: resumeProfileId
     };
 
     return this.http.post<CreateInterviewResponse>(this.apiUrl, request).pipe(
@@ -250,6 +254,37 @@ export class InterviewService {
     return this.http.get<CompanyProfile[]>(`${this.companyUrl}/profiles`).pipe(
       catchError(error => {
         console.error('Error loading company profiles:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Module 7: Resume Intelligence
+  uploadResume(file: File): Observable<UploadResumeResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<UploadResumeResponse>(`${this.resumeUrl}/upload`, formData).pipe(
+      catchError(error => {
+        console.error('Error uploading resume:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getLatestResume(): Observable<ResumeProfile> {
+    return this.http.get<ResumeProfile>(`${this.resumeUrl}/latest`).pipe(
+      catchError(error => {
+        console.error('Error loading latest resume:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getMyResumes(): Observable<ResumeProfile[]> {
+    return this.http.get<ResumeProfile[]>(`${this.resumeUrl}/my-resumes`).pipe(
+      catchError(error => {
+        console.error('Error loading resumes:', error);
         return throwError(() => error);
       })
     );
