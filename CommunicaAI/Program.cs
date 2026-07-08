@@ -83,6 +83,9 @@ builder.Services.AddHttpClient<ResumeParserService>();
 // Video Analysis Module (Module 4)
 builder.Services.AddScoped<VideoAnalysisService>();
 
+// Analytics Module (Module 8)
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",

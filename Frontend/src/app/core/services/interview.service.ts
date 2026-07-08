@@ -17,7 +17,8 @@ import {
   InterviewMetadata,
   CompanyProfile,
   UploadResumeResponse,
-  ResumeProfile
+  ResumeProfile,
+  PerformanceAnalyticsResponse
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +28,7 @@ export class InterviewService {
   private readonly questionBankUrl = `${environment.apiBaseUrl}/api/question-bank`;
   private readonly companyUrl = `${environment.apiBaseUrl}/api/company`;
   private readonly resumeUrl = `${environment.apiBaseUrl}/api/resume`;
+  private readonly analyticsUrl = `${environment.apiBaseUrl}/api/analytics`;
   
   // Store current session in memory (not localStorage)
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
@@ -285,6 +287,16 @@ export class InterviewService {
     return this.http.get<ResumeProfile[]>(`${this.resumeUrl}/my-resumes`).pipe(
       catchError(error => {
         console.error('Error loading resumes:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Module 8: Performance Analytics
+  getPerformanceAnalytics(): Observable<PerformanceAnalyticsResponse> {
+    return this.http.get<PerformanceAnalyticsResponse>(`${this.analyticsUrl}/performance`).pipe(
+      catchError(error => {
+        console.error('Error loading performance analytics:', error);
         return throwError(() => error);
       })
     );

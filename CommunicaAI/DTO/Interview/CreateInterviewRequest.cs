@@ -26,5 +26,8 @@ namespace CommunicaAI.DTO.Interview
 
         // Module 7: Resume Intelligence (optional)
         public Guid? ResumeProfileId { get; set; }
+
+        // Module 9: Specialized Interview Modes (optional, defaults to Technical)
+        public string? InterviewType { get; set; }
     }
 }

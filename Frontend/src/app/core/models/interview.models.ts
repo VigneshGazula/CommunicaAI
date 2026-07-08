@@ -271,3 +271,60 @@ export interface ResumeProfile {
   skills: string[];
   uploadedAt: string;
 }
+
+// Module 8: Performance Analytics
+export interface PerformanceAnalyticsResponse {
+  overallProgress: OverallProgressData;
+  technicalScoreTrend: TrendDataPoint[];
+  communicationScoreTrend: TrendDataPoint[];
+  confidenceScoreTrend: TrendDataPoint[];
+  videoAnalysisTrend: TrendDataPoint[];
+  resumeMatchTrend: TrendDataPoint[];
+  companyReadinessTrend: TrendDataPoint[];
+  strongestSkills: SkillData[];
+  weakestSkills: SkillData[];
+  practiceRecommendations: PracticeRecommendationsData;
+  weeklyProgress: WeeklyProgressData;
+}
+
+export interface OverallProgressData {
+  totalInterviews: number;
+  completedInterviews: number;
+  averageOverallScore: number;
+  averageTechnicalScore: number;
+  averageCommunicationScore: number;
+  averageConfidenceScore: number;
+  currentStreak: number;
+  longestStreak: number;
+  improvementRate: number;
+}
+
+export interface TrendDataPoint {
+  date: string;
+  score: number;
+  role: string;
+  difficulty: string;
+}
+
+export interface SkillData {
+  skillName: string;
+  averageScore: number;
+  frequency: number;
+  category: string;
+}
+
+export interface PracticeRecommendationsData {
+  focusAreas: string[];
+  recommendedRole: string;
+  recommendedDifficulty: string;
+  topicsToImprove: string[];
+  nextStepsSummary: string;
+}
+
+export interface WeeklyProgressData {
+  interviewsThisWeek: number;
+  interviewsLastWeek: number;
+  averageScoreThisWeek: number;
+  averageScoreLastWeek: number;
+  weekOverWeekImprovement: number;
+}

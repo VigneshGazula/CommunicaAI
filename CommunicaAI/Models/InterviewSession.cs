@@ -27,5 +27,8 @@
 
         // Module 7: Resume Intelligence
         public Guid? ResumeProfileId { get; set; }
+
+        // Module 9: Specialized Interview Modes
+        public string InterviewType { get; set; } = "Technical"; // Default to Technical for backward compatibility
     }
 }

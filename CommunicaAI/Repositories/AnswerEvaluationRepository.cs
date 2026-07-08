@@ -32,6 +32,15 @@ public class AnswerEvaluationRepository : IAnswerEvaluationRepository
                 x.InterviewAnswerId == answerId);
     }
 
+    public async Task<List<AnswerEvaluation>> GetBySessionIdAsync(
+        Guid sessionId)
+    {
+        return await _context.AnswerEvaluations
+            .Include(e => e.InterviewAnswer)
+            .Where(e => e.InterviewAnswer!.InterviewSession!.Id == sessionId)
+            .ToListAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var evaluation = await _context.AnswerEvaluations.FindAsync(id);
