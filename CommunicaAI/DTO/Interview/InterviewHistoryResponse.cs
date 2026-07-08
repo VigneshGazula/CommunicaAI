@@ -9,5 +9,7 @@ namespace CommunicaAI.DTO.Interview
         public DateTime? CompletedAt { get; set; }
         public string Status { get; set; } = string.Empty;
         public double? CompletionPercentage { get; set; }
+        // Module 9: Specialized Interview Modes
+        public string InterviewType { get; set; } = "Technical";
     }
 }

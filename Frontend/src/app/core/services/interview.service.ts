@@ -18,7 +18,8 @@ import {
   CompanyProfile,
   UploadResumeResponse,
   ResumeProfile,
-  PerformanceAnalyticsResponse
+  PerformanceAnalyticsResponse,
+  InterviewTypesResponse
 } from '../models/interview.models';
 
 @Injectable({ providedIn: 'root' })
@@ -34,7 +35,7 @@ export class InterviewService {
   private currentSessionSubject = new BehaviorSubject<InterviewSession | null>(null);
   public currentSession$ = this.currentSessionSubject.asObservable();
 
-  createSession(setup: InterviewSetup, companyProfileId?: string, resumeProfileId?: string): Observable<InterviewSession> {
+  createSession(setup: InterviewSetup, companyProfileId?: string, resumeProfileId?: string, interviewType?: string): Observable<InterviewSession> {
     const request: CreateInterviewRequest = {
       role: setup.role,
       topic: setup.topic,
@@ -42,7 +43,8 @@ export class InterviewService {
       questionCount: setup.questionCount,
       durationMinutes: setup.duration,
       companyProfileId: companyProfileId,
-      resumeProfileId: resumeProfileId
+      resumeProfileId: resumeProfileId,
+      interviewType: interviewType || 'Technical' // Module 9: Default to Technical
     };
 
     return this.http.post<CreateInterviewResponse>(this.apiUrl, request).pipe(
@@ -302,6 +304,16 @@ export class InterviewService {
     );
   }
 
+  // Module 9: Specialized Interview Modes
+  getInterviewTypes(): Observable<InterviewTypesResponse> {
+    return this.http.get<InterviewTypesResponse>(`${this.apiUrl}/types`).pipe(
+      catchError(error => {
+        console.error('Error loading interview types:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   private mapDetailResponseToSession(response: InterviewDetailResponse): InterviewSession {
     const questions = response.questions.map(q => this.mapQuestionWithAnswer(q));
     const answers = response.questions
@@ -327,6 +339,7 @@ export class InterviewService {
       createdAt: new Date(response.startedAt),
       completedAt: response.completedAt ? new Date(response.completedAt) : undefined,
       currentQuestionIndex: 0,
+      interviewType: response.interviewType || 'Technical', // Module 9
       result: response.result ? {
         overallScore: response.result.overallScore ?? 0,
         technicalScore: response.result.technicalScore ?? 0,

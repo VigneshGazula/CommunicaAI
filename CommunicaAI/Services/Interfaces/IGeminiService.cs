@@ -9,6 +9,11 @@ namespace CommunicaAI.Services.Interfaces
         string question,
         string answer);
 
+        Task<SubmitAudioAnswerResponse> EvaluateAnswerAsync(
+        string question,
+        string answer,
+        string interviewType);
+
         Task<CoachingReport> GenerateCoachingReportAsync(
             string role,
             string difficulty,

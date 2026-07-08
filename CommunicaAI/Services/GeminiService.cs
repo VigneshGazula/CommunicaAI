@@ -204,6 +204,188 @@ Important: All text fields (strengths, improvements, feedback) must be single st
         }
     }
 
+    // Module 9: Overload with Interview Type context
+    public async Task<SubmitAudioAnswerResponse> EvaluateAnswerAsync(
+        string question,
+        string answer,
+        string interviewType)
+    {
+        // Get interview type-specific evaluation guidance
+        var typeGuidance = GetInterviewTypeGuidance(interviewType);
+
+        var prompt = $@"
+You are a senior interviewer evaluating a candidate's answer for a {interviewType} interview across multiple dimensions.
+
+Interview Type: {interviewType}
+{typeGuidance}
+
+Question:
+{question}
+
+Candidate Answer:
+{answer}
+
+Evaluate the answer comprehensively considering the interview type context and return ONLY a valid JSON object (no markdown, no explanation) with these exact fields:
+{{
+  ""technicalScore"": <number 0-100>,
+  ""clarityScore"": <number 0-100>,
+  ""completenessScore"": <number 0-100>,
+  ""overallScore"": <number 0-100>,
+  ""communicationScore"": <number 0-100>,
+  ""confidenceScore"": <number 0-100>,
+  ""grammarScore"": <number 0-100>,
+  ""vocabularyScore"": <number 0-100>,
+  ""professionalismScore"": <number 0-100>,
+  ""answerStructureScore"": <number 0-100>,
+  ""persuasivenessScore"": <number 0-100>,
+  ""concisenessScore"": <number 0-100>,
+  ""strengths"": ""<single string with strengths separated by semicolons>"",
+  ""improvements"": ""<single string with improvements separated by semicolons>"",
+  ""feedback"": ""<single string with overall feedback>""
+}}
+
+Evaluation Guidelines (adapted for {interviewType}):
+- Technical Score: Accuracy and depth of technical/domain knowledge
+- Clarity Score: How clearly the answer was expressed
+- Completeness Score: How thoroughly the answer addresses the question
+- Overall Score: Weighted average of all aspects
+- Communication Score: Overall verbal communication quality
+- Confidence Score: Conviction and assurance in the response
+- Grammar Score: Grammatical correctness and sentence structure
+- Vocabulary Score: Appropriate use of professional terminology
+- Professionalism Score: Professional tone and demeanor
+- Answer Structure Score: Logical organization and flow
+- Persuasiveness Score: Ability to convince and present compelling arguments
+- Conciseness Score: Balance between detail and brevity
+
+Important: All text fields (strengths, improvements, feedback) must be single strings, not arrays.
+Adjust scoring weights based on interview type priorities.";
+
+        var request = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new[]
+                    {
+                        new
+                        {
+                            text = prompt
+                        }
+                    }
+                }
+            }
+        };
+
+        var url =
+            $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+
+        int maxRetries = 3;
+        int retryDelayMs = 2000;
+        string json = string.Empty;
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(url, request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                {
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2;
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+                json = await response.Content.ReadAsStringAsync();
+                break;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+            {
+                await Task.Delay(retryDelayMs);
+                retryDelayMs *= 2;
+            }
+        }
+
+        if (string.IsNullOrEmpty(json))
+        {
+            throw new Exception("Failed to evaluate answer after multiple retries.");
+        }
+
+        using var document = JsonDocument.Parse(json);
+        var aiResponse = document.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString();
+        var cleanedResponse = aiResponse!.Replace("```json", "").Replace("```", "").Trim();
+
+        try
+        {
+            using var evalDoc = JsonDocument.Parse(cleanedResponse);
+            var root = evalDoc.RootElement;
+
+            return new SubmitAudioAnswerResponse
+            {
+                TechnicalScore = GetIntProperty(root, "technicalScore", 70),
+                ClarityScore = GetIntProperty(root, "clarityScore", 70),
+                CompletenessScore = GetIntProperty(root, "completenessScore", 70),
+                OverallScore = GetIntProperty(root, "overallScore", 70),
+                CommunicationScore = GetIntProperty(root, "communicationScore", 70),
+                ConfidenceScore = GetIntProperty(root, "confidenceScore", 70),
+                GrammarScore = GetIntProperty(root, "grammarScore", 70),
+                VocabularyScore = GetIntProperty(root, "vocabularyScore", 70),
+                ProfessionalismScore = GetIntProperty(root, "professionalismScore", 70),
+                AnswerStructureScore = GetIntProperty(root, "answerStructureScore", 70),
+                PersuasivenessScore = GetIntProperty(root, "persuasivenessScore", 70),
+                ConcisenessScore = GetIntProperty(root, "concisenessScore", 70),
+                Strengths = GetStringOrArrayAsString(root, "strengths"),
+                Improvements = GetStringOrArrayAsString(root, "improvements"),
+                Feedback = GetStringOrArrayAsString(root, "feedback")
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Deserialization error: {ex.Message}");
+            return new SubmitAudioAnswerResponse
+            {
+                TechnicalScore = 70,
+                ClarityScore = 70,
+                CompletenessScore = 70,
+                OverallScore = 70,
+                CommunicationScore = 70,
+                ConfidenceScore = 70,
+                GrammarScore = 70,
+                VocabularyScore = 70,
+                ProfessionalismScore = 70,
+                AnswerStructureScore = 70,
+                PersuasivenessScore = 70,
+                ConcisenessScore = 70,
+                Strengths = "Answer provided",
+                Improvements = "Could be more detailed",
+                Feedback = "Evaluation could not be completed due to formatting issues"
+            };
+        }
+    }
+
+    private static string GetInterviewTypeGuidance(string interviewType)
+    {
+        return interviewType switch
+        {
+            "Technical" => "Focus on technical depth, problem-solving approach, and best practices. Prioritize technical score and completeness.",
+            "HR" => "Emphasize cultural fit, communication skills, and professionalism. Prioritize communication, professionalism, and answer structure.",
+            "Behavioral" => "Evaluate STAR method usage, real experiences, and situational handling. Prioritize answer structure, completeness, and persuasiveness.",
+            "Coding" => "Assess algorithmic thinking, code quality, optimization, and edge case handling. Heavily weight technical score and clarity.",
+            "System Design" => "Evaluate architectural thinking, scalability considerations, and trade-off analysis. Prioritize technical score, completeness, and persuasiveness.",
+            "DevOps" => "Focus on automation, infrastructure knowledge, and operational best practices. Emphasize technical score and practical approach.",
+            "Cloud" => "Assess cloud services knowledge, cost optimization, and security practices. Prioritize technical score and completeness.",
+            "Data Science" => "Evaluate statistical reasoning, ML knowledge, and analytical approach. Focus on technical score and clarity.",
+            "AI/ML" => "Assess ML algorithms, model training, and AI system design. Heavily weight technical score and completeness.",
+            "Cyber Security" => "Evaluate security mindset, threat analysis, and compliance knowledge. Prioritize technical score and professionalism.",
+            "Product Manager" => "Assess product thinking, stakeholder management, and metrics. Emphasize communication, persuasiveness, and answer structure.",
+            "Solution Architect" => "Evaluate enterprise architecture, integration patterns, and solution design. Prioritize technical score, completeness, and persuasiveness.",
+            _ => "Evaluate holistically across all dimensions with balanced weighting."
+        };
+    }
+
     private static int GetIntProperty(JsonElement root, string propertyName, int defaultValue)
     {
         if (root.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.Number)

@@ -44,6 +44,10 @@ namespace CommunicaAI.Services
                 return MapToResponse(existingResult);
             }
 
+            // Get session to access interview type (Module 9)
+            var session = await _interviewRepository.GetByIdAsync(sessionId);
+            var interviewType = session?.InterviewType ?? "Technical";
+
             var questions = await _questionRepository.GetBySessionIdAsync(sessionId);
             var totalQuestions = questions.Count;
             var answeredQuestions = await _questionRepository.GetAnsweredCountAsync(sessionId);
@@ -72,10 +76,11 @@ namespace CommunicaAI.Services
                     continue;
                 }
 
-                // Evaluate answer
+                // Evaluate answer with interview type context (Module 9)
                 var evaluation = await _geminiService.EvaluateAnswerAsync(
                     question.QuestionText,
-                    answer.Transcript
+                    answer.Transcript,
+                    interviewType
                 );
 
                 var answerEvaluation = new AnswerEvaluation

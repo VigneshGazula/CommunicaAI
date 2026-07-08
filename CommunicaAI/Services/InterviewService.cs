@@ -44,7 +44,8 @@ namespace CommunicaAI.Services
                 StartedAt = DateTime.UtcNow,
                 Status = "InProgress",
                 CompanyProfileId = request.CompanyProfileId,
-                ResumeProfileId = request.ResumeProfileId
+                ResumeProfileId = request.ResumeProfileId,
+                InterviewType = request.InterviewType ?? "Technical" // Module 9: Default to Technical
             };
 
             var createdSession = await _interviewRepository.CreateAsync(session);
@@ -118,7 +119,8 @@ namespace CommunicaAI.Services
                     StartedAt = session.StartedAt,
                     CompletedAt = session.CompletedAt,
                     Status = session.Status,
-                    CompletionPercentage = result?.CompletionPercentage
+                    CompletionPercentage = result?.CompletionPercentage,
+                    InterviewType = session.InterviewType // Module 9
                 });
             }
 
@@ -169,6 +171,7 @@ namespace CommunicaAI.Services
                 Status = session.Status,
                 StartedAt = session.StartedAt,
                 CompletedAt = session.CompletedAt,
+                InterviewType = session.InterviewType, // Module 9
                 Questions = questionsWithAnswers,
                 Result = result != null ? new InterviewResultResponse
                 {
@@ -200,7 +203,8 @@ namespace CommunicaAI.Services
                 DurationMinutes = session.DurationMinutes,
                 Status = session.Status,
                 StartedAt = session.StartedAt,
-                CompletedAt = session.CompletedAt
+                CompletedAt = session.CompletedAt,
+                InterviewType = session.InterviewType // Module 9
             };
         }
     }

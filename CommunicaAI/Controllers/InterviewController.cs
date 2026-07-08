@@ -153,5 +153,112 @@ namespace CommunicaAI.Controllers
 
             return Ok(new { message = "Interview completed successfully." });
         }
+
+        [HttpGet("types")]
+        [AllowAnonymous]
+        public ActionResult<InterviewTypesResponse> GetInterviewTypes()
+        {
+            var interviewTypes = new List<InterviewTypeInfo>
+            {
+                new InterviewTypeInfo
+                {
+                    Type = "Technical",
+                    DisplayName = "Technical",
+                    Description = "Focuses on technical skills, problem-solving, and domain knowledge",
+                    Icon = "💻",
+                    FocusAreas = new List<string> { "Coding", "Algorithms", "System Knowledge", "Best Practices" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "HR",
+                    DisplayName = "HR",
+                    Description = "Assesses cultural fit, work style, and interpersonal skills",
+                    Icon = "👥",
+                    FocusAreas = new List<string> { "Culture Fit", "Work Style", "Team Collaboration", "Career Goals" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Behavioral",
+                    DisplayName = "Behavioral",
+                    Description = "Evaluates past experiences and situational responses",
+                    Icon = "🧠",
+                    FocusAreas = new List<string> { "STAR Method", "Past Experiences", "Conflict Resolution", "Leadership" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Coding",
+                    DisplayName = "Coding",
+                    Description = "Live coding challenges and algorithmic problem-solving",
+                    Icon = "⌨️",
+                    FocusAreas = new List<string> { "Data Structures", "Algorithms", "Code Quality", "Optimization" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "System Design",
+                    DisplayName = "System Design",
+                    Description = "Architectural design and scalability discussions",
+                    Icon = "🏗️",
+                    FocusAreas = new List<string> { "Architecture", "Scalability", "Trade-offs", "Distributed Systems" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "DevOps",
+                    DisplayName = "DevOps",
+                    Description = "CI/CD, infrastructure, and deployment practices",
+                    Icon = "🔧",
+                    FocusAreas = new List<string> { "CI/CD", "Infrastructure", "Monitoring", "Automation" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Cloud",
+                    DisplayName = "Cloud",
+                    Description = "Cloud platforms, services, and architecture",
+                    Icon = "☁️",
+                    FocusAreas = new List<string> { "AWS/Azure/GCP", "Cloud Services", "Cost Optimization", "Security" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Data Science",
+                    DisplayName = "Data Science",
+                    Description = "Statistics, ML algorithms, and data analysis",
+                    Icon = "📊",
+                    FocusAreas = new List<string> { "Statistics", "ML Algorithms", "Data Analysis", "Feature Engineering" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "AI/ML",
+                    DisplayName = "AI/ML",
+                    Description = "Machine learning, deep learning, and AI systems",
+                    Icon = "🤖",
+                    FocusAreas = new List<string> { "Neural Networks", "Model Training", "NLP", "Computer Vision" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Cyber Security",
+                    DisplayName = "Cyber Security",
+                    Description = "Security practices, threat analysis, and compliance",
+                    Icon = "🔒",
+                    FocusAreas = new List<string> { "Security Practices", "Threat Analysis", "Compliance", "Penetration Testing" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Product Manager",
+                    DisplayName = "Product Manager",
+                    Description = "Product strategy, roadmaps, and stakeholder management",
+                    Icon = "📱",
+                    FocusAreas = new List<string> { "Product Strategy", "Roadmaps", "User Research", "Metrics" }
+                },
+                new InterviewTypeInfo
+                {
+                    Type = "Solution Architect",
+                    DisplayName = "Solution Architect",
+                    Description = "Enterprise architecture and solution design",
+                    Icon = "🏛️",
+                    FocusAreas = new List<string> { "Enterprise Architecture", "Solution Design", "Integration", "Patterns" }
+                }
+            };
+
+            return Ok(new InterviewTypesResponse { InterviewTypes = interviewTypes });
+        }
     }
 }

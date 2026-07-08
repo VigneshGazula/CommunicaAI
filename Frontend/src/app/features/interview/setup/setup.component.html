@@ -47,6 +47,16 @@
         </div>
 
         <div class="field">
+          <label for="interviewType">Interview Type</label>
+          <select id="interviewType" formControlName="interviewType">
+            @for (type of interviewTypes(); track type.type) {
+              <option [value]="type.type">{{ type.icon }} {{ type.displayName }}</option>
+            }
+          </select>
+          <small class="field-hint">Select the type of interview to practice</small>
+        </div>
+
+        <div class="field">
           <label for="companyProfileId">Target Company (Optional)</label>
           <select id="companyProfileId" formControlName="companyProfileId">
             <option value="">No specific company</option>

@@ -12,6 +12,7 @@ interface HistorySession {
   startedAt: Date;
   completedAt: Date | null;
   completionPercentage: number;
+  interviewType: string; // Module 9
 }
 
 @Component({
@@ -45,7 +46,8 @@ export class HistoryComponent implements OnInit {
             status: h.status,
             startedAt: new Date(h.startedAt),
             completedAt: h.completedAt ? new Date(h.completedAt) : null,
-            completionPercentage: h.completionPercentage || 0
+            completionPercentage: h.completionPercentage || 0,
+            interviewType: h.interviewType || 'Technical' // Module 9
           }))
           // Sort by most recent first
           .sort((a, b) => {

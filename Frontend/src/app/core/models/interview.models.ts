@@ -8,6 +8,7 @@ export interface CreateInterviewRequest {
   durationMinutes: number;
   companyProfileId?: string; // Module 6: Company Intelligence
   resumeProfileId?: string; // Module 7: Resume Intelligence
+  interviewType?: string; // Module 9: Specialized Interview Modes
 }
 
 export interface CreateInterviewResponse {
@@ -120,6 +121,7 @@ export interface InterviewDetailResponse {
   status: string;
   startedAt: string;
   completedAt: string | null;
+  interviewType: string; // Module 9
   questions: QuestionWithAnswerResponse[];
   result: InterviewResultResponse | null;
 }
@@ -180,6 +182,7 @@ export interface InterviewSession {
   createdAt: Date;
   completedAt?: Date;
   currentQuestionIndex: number;
+  interviewType?: string; // Module 9: Specialized Interview Modes
   result?: {
     overallScore: number;
     technicalScore: number;
@@ -229,6 +232,7 @@ export interface InterviewHistoryResponse {
   completedAt: string | null;
   status: string;
   completionPercentage: number | null;
+  interviewType: string; // Module 9
 }
 
 // Interview metadata from backend
@@ -327,4 +331,17 @@ export interface WeeklyProgressData {
   averageScoreThisWeek: number;
   averageScoreLastWeek: number;
   weekOverWeekImprovement: number;
+}
+
+// Module 9: Specialized Interview Modes
+export interface InterviewTypesResponse {
+  interviewTypes: InterviewTypeInfo[];
+}
+
+export interface InterviewTypeInfo {
+  type: string;
+  displayName: string;
+  description: string;
+  icon: string;
+  focusAreas: string[];
 }

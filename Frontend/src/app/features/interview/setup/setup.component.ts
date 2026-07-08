@@ -25,6 +25,7 @@ export class SetupComponent implements OnInit {
   readonly roles = signal<string[]>([]);
   readonly difficulties = signal<string[]>([]);
   readonly companies = signal<CompanyProfile[]>([]);
+  readonly interviewTypes = signal<any[]>([]); // Module 9
   readonly uploadedResume = signal<ResumeMetadata | null>(null);
   readonly resumeUploading = signal(false);
   readonly resumeError = signal('');
@@ -37,12 +38,14 @@ export class SetupComponent implements OnInit {
     duration: [15, [Validators.required, Validators.min(5), Validators.max(60)]],
     questionCount: [5, [Validators.required, Validators.min(1), Validators.max(20)]],
     companyProfileId: [''],
-    resumeProfileId: ['']
+    resumeProfileId: [''],
+    interviewType: ['Technical'] // Module 9: Default to Technical
   });
 
   ngOnInit(): void {
     this.loadMetadata();
     this.loadCompanyProfiles();
+    this.loadInterviewTypes(); // Module 9
   }
 
   private loadMetadata(): void {
@@ -80,6 +83,18 @@ export class SetupComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load company profiles:', err);
+      }
+    });
+  }
+
+  // Module 9: Load interview types
+  private loadInterviewTypes(): void {
+    this.interviewService.getInterviewTypes().subscribe({
+      next: (response) => {
+        this.interviewTypes.set(response.interviewTypes);
+      },
+      error: (err) => {
+        console.error('Failed to load interview types:', err);
       }
     });
   }
@@ -151,8 +166,9 @@ export class SetupComponent implements OnInit {
     };
     const companyProfileId = formValue.companyProfileId || undefined;
     const resumeProfileId = formValue.resumeProfileId || undefined;
+    const interviewType = formValue.interviewType || 'Technical'; // Module 9
 
-    this.interviewService.createSession(setup, companyProfileId, resumeProfileId).subscribe({
+    this.interviewService.createSession(setup, companyProfileId, resumeProfileId, interviewType).subscribe({
       next: (session) => {
         this.router.navigate(['/interview/live', session.id]);
       },

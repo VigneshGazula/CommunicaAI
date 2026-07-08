@@ -11,6 +11,8 @@ namespace CommunicaAI.DTO.Interview
         public string Status { get; set; } = string.Empty;
         public DateTime StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        // Module 9: Specialized Interview Modes
+        public string InterviewType { get; set; } = "Technical";
         public List<QuestionWithAnswerResponse> Questions { get; set; } = new();
         public InterviewResultResponse? Result { get; set; }
     }

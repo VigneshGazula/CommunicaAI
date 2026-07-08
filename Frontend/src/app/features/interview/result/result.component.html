@@ -13,7 +13,7 @@
           Back to Dashboard
         </a>
         <h1>Interview Results</h1>
-        <p>{{ session()!.setup.role }} • {{ session()!.setup.difficulty | titlecase }}</p>
+        <p>{{ session()!.setup.role }} • {{ session()!.setup.difficulty | titlecase }} • {{ session()?.interviewType || 'Technical' }}</p>
         <p class="result-date">{{ session()!.completedAt | date: 'MMM d, y, h:mm a' }}</p>
       </div>
 

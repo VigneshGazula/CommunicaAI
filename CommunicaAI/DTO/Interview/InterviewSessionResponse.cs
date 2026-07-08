@@ -19,5 +19,8 @@
         public DateTime StartedAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+
+        // Module 9: Specialized Interview Modes
+        public string InterviewType { get; set; } = "Technical";
     }
 }
