@@ -101,6 +101,37 @@ export class ResultComponent implements OnInit {
     };
   });
 
+  // Company Intelligence (Module 6)
+  readonly hasCompanyReadiness = computed(() => {
+    const session = this.session();
+    return (session?.result?.companyReadinessScore ?? 0) > 0;
+  });
+
+  readonly companyReadinessScore = computed(() => {
+    const session = this.session();
+    return session?.result?.companyReadinessScore ?? 0;
+  });
+
+  readonly technicalAlignment = computed(() => {
+    const session = this.session();
+    return session?.result?.technicalAlignment ?? 0;
+  });
+
+  readonly communicationAlignment = computed(() => {
+    const session = this.session();
+    return session?.result?.communicationAlignment ?? 0;
+  });
+
+  readonly cultureFit = computed(() => {
+    const session = this.session();
+    return session?.result?.cultureFit ?? 0;
+  });
+
+  readonly companySpecificFeedback = computed(() => {
+    const session = this.session();
+    return session?.result?.companySpecificFeedback ?? '';
+  });
+
   private splitBySemicolon(text: string): string[] {
     return text.split(';').map(s => s.trim()).filter(s => s.length > 0);
   }

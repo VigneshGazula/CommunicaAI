@@ -347,6 +347,52 @@
         </div>
       }
 
+      <!-- Company Intelligence (Module 6) -->
+      @if (hasCompanyReadiness()) {
+        <div class="company-readiness-section">
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            Company Readiness Analysis
+          </h2>
+          
+          <div class="company-scores-grid">
+            <div class="company-score-card">
+              <div class="score-label">Company Readiness</div>
+              <div class="score-value" [class.score-high]="companyReadinessScore() >= 75" [class.score-medium]="companyReadinessScore() >= 50 && companyReadinessScore() < 75" [class.score-low]="companyReadinessScore() < 50">
+                {{ companyReadinessScore() }}%
+              </div>
+            </div>
+            <div class="company-score-card">
+              <div class="score-label">Technical Alignment</div>
+              <div class="score-value" [class.score-high]="technicalAlignment() >= 75" [class.score-medium]="technicalAlignment() >= 50 && technicalAlignment() < 75" [class.score-low]="technicalAlignment() < 50">
+                {{ technicalAlignment() }}%
+              </div>
+            </div>
+            <div class="company-score-card">
+              <div class="score-label">Communication Fit</div>
+              <div class="score-value" [class.score-high]="communicationAlignment() >= 75" [class.score-medium]="communicationAlignment() >= 50 && communicationAlignment() < 75" [class.score-low]="communicationAlignment() < 50">
+                {{ communicationAlignment() }}%
+              </div>
+            </div>
+            <div class="company-score-card">
+              <div class="score-label">Culture Fit</div>
+              <div class="score-value" [class.score-high]="cultureFit() >= 75" [class.score-medium]="cultureFit() >= 50 && cultureFit() < 75" [class.score-low]="cultureFit() < 50">
+                {{ cultureFit() }}%
+              </div>
+            </div>
+          </div>
+
+          @if (companySpecificFeedback()) {
+            <div class="company-feedback">
+              <h4>Company-Specific Feedback</h4>
+              <p>{{ companySpecificFeedback() }}</p>
+            </div>
+          }
+        </div>
+      }
+
       @if (summary().length > 0) {
         <div class="summary-section">
           <h3 class="section-title">

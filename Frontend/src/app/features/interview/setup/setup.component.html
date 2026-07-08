@@ -47,6 +47,17 @@
         </div>
 
         <div class="field">
+          <label for="companyProfileId">Target Company (Optional)</label>
+          <select id="companyProfileId" formControlName="companyProfileId">
+            <option value="">No specific company</option>
+            @for (company of companies(); track company.id) {
+              <option [value]="company.id">{{ company.companyName }}</option>
+            }
+          </select>
+          <small class="field-hint">Select a company to get tailored questions and evaluation</small>
+        </div>
+
+        <div class="field">
           <label for="duration">Duration (minutes)</label>
           <input type="number" id="duration" formControlName="duration" min="5" max="60" />
           @if (setupForm.controls.duration.touched && setupForm.controls.duration.errors?.['min']) {

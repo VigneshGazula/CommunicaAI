@@ -245,6 +245,16 @@ export class InterviewService {
     );
   }
 
+  // Module 6: Company Intelligence
+  getCompanyProfiles(): Observable<CompanyProfile[]> {
+    return this.http.get<CompanyProfile[]>(`${this.companyUrl}/profiles`).pipe(
+      catchError(error => {
+        console.error('Error loading company profiles:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   private mapDetailResponseToSession(response: InterviewDetailResponse): InterviewSession {
     const questions = response.questions.map(q => this.mapQuestionWithAnswer(q));
     const answers = response.questions

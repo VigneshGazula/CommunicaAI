@@ -24,5 +24,8 @@
 
         // Module 6: Company Intelligence
         public Guid? CompanyProfileId { get; set; }
+
+        // Module 7: Resume Intelligence
+        public Guid? ResumeProfileId { get; set; }
     }
 }

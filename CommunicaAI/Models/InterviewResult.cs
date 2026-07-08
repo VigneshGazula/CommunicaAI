@@ -80,6 +80,13 @@ public class InterviewResult
 
     public string CompanySpecificFeedback { get; set; } = string.Empty;
 
+    // Resume Intelligence (Module 7)
+    public int ResumeMatchScore { get; set; }
+
+    public string SkillGapSummary { get; set; } = string.Empty;
+
+    public string CareerRecommendations { get; set; } = string.Empty;
+
     public DateTime GeneratedAt { get; set; }
 
     // Navigation property
