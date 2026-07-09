@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.communicaai.com'
+  apiBaseUrl: 'https://communicaai.onrender.com/api'
 };
