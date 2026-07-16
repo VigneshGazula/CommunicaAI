@@ -94,6 +94,7 @@ builder.Services.AddCors(options =>
                       "https://localhost:4200",
                       "http://localhost:4000",
                       "https://localhost:4000",
+                      "https://communicaai.onrender.com",
                       "https://communicaai-frontend.onrender.com"
                   )
                   .AllowAnyHeader()
@@ -133,8 +134,6 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-app.UseCors("AllowAngular");
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -144,6 +143,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseRouting();
+app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
 
