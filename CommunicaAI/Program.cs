@@ -14,7 +14,11 @@ using System.Text;
 using Swashbuckle.AspNetCore.Annotations;
 using Npgsql;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
