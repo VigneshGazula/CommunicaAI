@@ -16,11 +16,5 @@ namespace CommunicaAI.DTO.Auth
         [Required]
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
-
-        [Required]
-        public IFormFile AudioFile { get; set; } = default!;
-
-        [Required]
-        public IFormFile VideoFile { get; set; } = default!;
     }
 }

@@ -42,9 +42,7 @@ builder.Services.AddHttpClient("PythonVerification", client =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<IPythonVerificationService, PythonVerificationService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
-builder.Services.AddScoped<IBiometricVerificationService, BiometricVerificationService>();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGeminiService,GeminiService>();

@@ -11,20 +11,16 @@ export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly base = `${environment.apiBaseUrl}/api/auth`;
 
-  register(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/register`, formData);
+  register(payload: { fullName: string; email: string; password: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/register`, payload);
   }
 
   loginPassword(payload: { email: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/login/password`, payload);
   }
 
-  loginAudio(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login/audio`, formData);
-  }
-
-  loginVideo(formData: FormData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login/video`, formData);
+  loginGuest(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/login/guest`, {});
   }
 
   saveTokenSync(token: string): void {

@@ -12,7 +12,12 @@
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
 }
-
+.btn-ghost{
+  justify-content: right;
+  height: 50px;
+  width: 150px;
+  align-items: center;
+}
 .dashboard-main {
   max-width: 1200px;
   margin: 0 auto;

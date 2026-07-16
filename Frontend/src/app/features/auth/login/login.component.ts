@@ -44,4 +44,20 @@ export class LoginComponent {
       }
     });
   }
+
+  continueAsGuest(): void {
+    this.loading.set(true);
+    this.error.set('');
+
+    this.auth.loginGuest().subscribe({
+      next: (response) => {
+        this.auth.saveTokenSync(response.token);
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.error.set(err?.error?.message ?? 'Guest login failed. Please try again.');
+        this.loading.set(false);
+      }
+    });
+  }
 }

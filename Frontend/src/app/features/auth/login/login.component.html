@@ -40,6 +40,10 @@
       </button>
     </form>
 
+    <button type="button" class="btn-ghost auth-guest-btn" (click)="continueAsGuest()" [disabled]="loading()">
+      @if (loading()) { Please wait… } @else { Continue with Guest }
+    </button>
+
     <p class="auth-footer">Don't have an account? <a routerLink="/register">Create one</a></p>
   </div>
 </div>
