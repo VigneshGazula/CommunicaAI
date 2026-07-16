@@ -39,7 +39,7 @@
         @if (loading()) { Signing in… } @else { Sign in }
       </button>
     </form>
-
+    <br>
     <button type="button" class="btn-ghost auth-guest-btn" (click)="continueAsGuest()" [disabled]="loading()">
       @if (loading()) { Please wait… } @else { Continue with Guest }
     </button>
