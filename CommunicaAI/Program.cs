@@ -93,7 +93,8 @@ builder.Services.AddCors(options =>
                       "http://localhost:4200",
                       "https://localhost:4200",
                       "http://localhost:4000",
-                      "https://localhost:4000"
+                      "https://localhost:4000",
+                      "https://communicaai-frontend.onrender.com"
                   )
                   .AllowAnyHeader()
                   .AllowAnyMethod();
