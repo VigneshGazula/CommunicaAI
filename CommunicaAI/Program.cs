@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Swashbuckle.AspNetCore.Annotations;
+using Npgsql;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -20,6 +21,34 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables();
 
+static string? ResolveConnectionString(IConfiguration configuration)
+{
+    var environmentDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (!string.IsNullOrWhiteSpace(environmentDatabaseUrl))
+    {
+        if (Uri.TryCreate(environmentDatabaseUrl, UriKind.Absolute, out var databaseUri) &&
+            (databaseUri.Scheme == "postgres" || databaseUri.Scheme == "postgresql"))
+        {
+            var builder = new NpgsqlConnectionStringBuilder
+            {
+                Host = databaseUri.Host,
+                Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+                Database = databaseUri.AbsolutePath.TrimStart('/'),
+                Username = databaseUri.UserInfo.Split(':', 2)[0],
+                Password = databaseUri.UserInfo.Contains(':') ? databaseUri.UserInfo.Split(':', 2)[1] : string.Empty,
+                SslMode = SslMode.Require,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
+
+        return environmentDatabaseUrl;
+    }
+
+    return configuration.GetConnectionString("DefaultConnection");
+}
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -27,8 +56,10 @@ builder.Services.AddEndpointsApiExplorer();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+var connectionString = ResolveConnectionString(builder.Configuration);
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
@@ -94,14 +125,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins(
-                      "http://localhost:4200",
-                      "https://localhost:4200",
-                      "http://localhost:4000",
-                      "https://localhost:4000",
-                      "https://communicaai.onrender.com",
-                      "https://communicaai-frontend.onrender.com"
-                  )
+            policy.AllowAnyOrigin()
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
