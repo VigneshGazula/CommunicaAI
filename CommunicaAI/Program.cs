@@ -7,47 +7,60 @@ using CommunicaAI.Repositories.Interfaces;
 using CommunicaAI.Services;
 using CommunicaAI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Swashbuckle.AspNetCore.Annotations;
 using Npgsql;
+using System.Text;
 
-var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = AppContext.BaseDirectory
-});
+var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseKestrel();
+// ======================================================
+// RENDER PORT CONFIGURATION
+// ======================================================
 
-builder.Configuration
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables();
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+
+// ======================================================
+// DATABASE CONNECTION
+// ======================================================
 
 static string? ResolveConnectionString(IConfiguration configuration)
 {
-    var environmentDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    var environmentDatabaseUrl =
+        Environment.GetEnvironmentVariable("DATABASE_URL");
+
     if (!string.IsNullOrWhiteSpace(environmentDatabaseUrl))
     {
-        if (Uri.TryCreate(environmentDatabaseUrl, UriKind.Absolute, out var databaseUri) &&
-            (databaseUri.Scheme == "postgres" || databaseUri.Scheme == "postgresql"))
+        if (Uri.TryCreate(
+                environmentDatabaseUrl,
+                UriKind.Absolute,
+                out var databaseUri) &&
+            (databaseUri.Scheme == "postgres" ||
+             databaseUri.Scheme == "postgresql"))
         {
-            var builder = new NpgsqlConnectionStringBuilder
+            var npgsqlBuilder = new NpgsqlConnectionStringBuilder
             {
                 Host = databaseUri.Host,
-                Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+                Port = databaseUri.Port > 0
+                    ? databaseUri.Port
+                    : 5432,
+
                 Database = databaseUri.AbsolutePath.TrimStart('/'),
+
                 Username = databaseUri.UserInfo.Split(':', 2)[0],
-                Password = databaseUri.UserInfo.Contains(':') ? databaseUri.UserInfo.Split(':', 2)[1] : string.Empty,
-                SslMode = SslMode.Require,
-                TrustServerCertificate = true
+
+                Password = databaseUri.UserInfo.Contains(':')
+                    ? databaseUri.UserInfo.Split(':', 2)[1]
+                    : string.Empty,
+
+                SslMode = SslMode.Require
             };
 
-            return builder.ConnectionString;
+            return npgsqlBuilder.ConnectionString;
         }
 
         return environmentDatabaseUrl;
@@ -56,17 +69,42 @@ static string? ResolveConnectionString(IConfiguration configuration)
     return configuration.GetConnectionString("DefaultConnection");
 }
 
-// Add services to the container.
+var connectionString =
+    ResolveConnectionString(builder.Configuration);
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection string is not configured.");
+}
+
+
+// ======================================================
+// CONTROLLERS / OPENAPI
+// ======================================================
 
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 builder.Services.AddOpenApi();
 
-var connectionString = ResolveConnectionString(builder.Configuration);
+builder.Services.AddSwaggerGen();
+
+
+// ======================================================
+// DATABASE
+// ======================================================
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString);
+});
+
+
+// ======================================================
+// CONFIGURATION
+// ======================================================
 
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
@@ -77,113 +115,289 @@ builder.Services.Configure<GeminiSettings>(
 builder.Services.Configure<PythonVerificationServiceOptions>(
     builder.Configuration.GetSection("PythonVerificationService"));
 
+
+// ======================================================
+// HTTP CLIENTS
+// ======================================================
+
+builder.Services.AddHttpClient();
+
 builder.Services.AddHttpClient("PythonVerification", client =>
 {
-    var baseUrl = builder.Configuration["PythonVerificationService:BaseUrl"];
-    client.BaseAddress = new Uri(baseUrl!);
+    var baseUrl =
+        builder.Configuration["PythonVerificationService:BaseUrl"];
+
+    if (!string.IsNullOrWhiteSpace(baseUrl))
+    {
+        client.BaseAddress = new Uri(baseUrl);
+    }
+
     client.Timeout = TimeSpan.FromMinutes(2);
 });
 
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
-builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IGeminiService,GeminiService>();
-builder.Services.AddScoped<IAnswerEvaluationRepository,AnswerEvaluationRepository>();
-builder.Services.AddScoped<IInterviewAnswerRepository, InterviewAnswerRepository>();
-
-// Interview Module
-builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
-builder.Services.AddScoped<IInterviewService, InterviewService>();
-
-builder.Services.AddScoped<ITranscriptionService,GeminiTranscriptionService>();
-
-// Question Bank Module
-builder.Services.AddScoped<IQuestionBankRepository, QuestionBankRepository>();
-builder.Services.AddScoped<IQuestionBankService, QuestionBankService>();
-
-// Interview Question Module
-builder.Services.AddScoped<IInterviewQuestionRepository, InterviewQuestionRepository>();
-builder.Services.AddScoped<IInterviewQuestionService, InterviewQuestionService>();
-
-// Interview Answer Module
-builder.Services.AddScoped<IInterviewAnswerRepository, InterviewAnswerRepository>();
-builder.Services.AddScoped<IInterviewAnswerService, InterviewAnswerService>();
-
-// Interview Result Module
-builder.Services.AddScoped<IInterviewResultRepository, InterviewResultRepository>();
-builder.Services.AddScoped<IInterviewResultService, InterviewResultService>();
-
-// Company Profile Module (Module 6)
-builder.Services.AddScoped<ICompanyProfileRepository, CompanyProfileRepository>();
-
-// Resume Profile Module (Module 7)
-builder.Services.AddScoped<IResumeProfileRepository, ResumeProfileRepository>();
 builder.Services.AddHttpClient<ResumeParserService>();
 
-// Video Analysis Module (Module 4)
+
+// ======================================================
+// CORE SERVICES
+// ======================================================
+
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+builder.Services.AddScoped<
+    IPasswordHasher<AppUser>,
+    PasswordHasher<AppUser>>();
+
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddScoped<IGeminiService, GeminiService>();
+
+builder.Services.AddScoped<
+    ITranscriptionService,
+    GeminiTranscriptionService>();
+
+
+// ======================================================
+// ANSWER EVALUATION
+// ======================================================
+
+builder.Services.AddScoped<
+    IAnswerEvaluationRepository,
+    AnswerEvaluationRepository>();
+
+
+// ======================================================
+// INTERVIEW MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IInterviewRepository,
+    InterviewRepository>();
+
+builder.Services.AddScoped<
+    IInterviewService,
+    InterviewService>();
+
+
+// ======================================================
+// QUESTION BANK MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IQuestionBankRepository,
+    QuestionBankRepository>();
+
+builder.Services.AddScoped<
+    IQuestionBankService,
+    QuestionBankService>();
+
+
+// ======================================================
+// INTERVIEW QUESTION MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IInterviewQuestionRepository,
+    InterviewQuestionRepository>();
+
+builder.Services.AddScoped<
+    IInterviewQuestionService,
+    InterviewQuestionService>();
+
+
+// ======================================================
+// INTERVIEW ANSWER MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IInterviewAnswerRepository,
+    InterviewAnswerRepository>();
+
+builder.Services.AddScoped<
+    IInterviewAnswerService,
+    InterviewAnswerService>();
+
+
+// ======================================================
+// INTERVIEW RESULT MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IInterviewResultRepository,
+    InterviewResultRepository>();
+
+builder.Services.AddScoped<
+    IInterviewResultService,
+    InterviewResultService>();
+
+
+// ======================================================
+// COMPANY PROFILE MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    ICompanyProfileRepository,
+    CompanyProfileRepository>();
+
+
+// ======================================================
+// RESUME PROFILE MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IResumeProfileRepository,
+    ResumeProfileRepository>();
+
+
+// ======================================================
+// VIDEO ANALYSIS MODULE
+// ======================================================
+
 builder.Services.AddScoped<VideoAnalysisService>();
 
-// Analytics Module (Module 8)
-builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+// ======================================================
+// ANALYTICS MODULE
+// ======================================================
+
+builder.Services.AddScoped<
+    IAnalyticsService,
+    AnalyticsService>();
+
+
+// ======================================================
+// CORS
+// ======================================================
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+
+// ======================================================
+// JWT AUTHENTICATION
+// ======================================================
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var jwtSection = builder.Configuration.GetSection("Jwt");
+        var jwtSection =
+            builder.Configuration.GetSection("Jwt");
 
-        options.TokenValidationParameters = new TokenValidationParameters
+        var jwtKey = jwtSection["Key"];
+
+        if (string.IsNullOrWhiteSpace(jwtKey))
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-            ValidIssuer = jwtSection["Issuer"],
-            ValidAudience = jwtSection["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["Key"]!)),
-            ClockSkew = TimeSpan.Zero
-        };
+            throw new InvalidOperationException(
+                "JWT Key is not configured.");
+        }
+
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+
+                ValidateAudience = true,
+
+                ValidateIssuerSigningKey = true,
+
+                ValidateLifetime = true,
+
+                ValidIssuer =
+                    jwtSection["Issuer"],
+
+                ValidAudience =
+                    jwtSection["Audience"],
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtKey)),
+
+                ClockSkew = TimeSpan.Zero
+            };
     });
 
 builder.Services.AddAuthorization();
 
-builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
-{
-    options.MultipartBodyLengthLimit = 200 * 1024 * 1024;
-});
 
-builder.Services.AddEndpointsApiExplorer();
+// ======================================================
+// FILE UPLOAD LIMIT
+// ======================================================
 
-builder.Services.AddSwaggerGen();
+builder.Services.Configure<
+    Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit =
+            200 * 1024 * 1024;
+    });
+
+
+// ======================================================
+// BUILD APPLICATION
+// ======================================================
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
 
-    app.UseSwaggerUI();
-}
+// ======================================================
+// SWAGGER
+// ======================================================
 
-app.UseHttpsRedirection();
+// Enable Swagger on Render as well so API can be tested
+app.UseSwagger();
+
+app.UseSwaggerUI();
+
+
+// ======================================================
+// MIDDLEWARE
+// ======================================================
+
+// Render handles HTTPS externally.
+// Don't force HTTPS redirection inside the container.
+// app.UseHttpsRedirection();
+
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseCors("AllowAngular");
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
+
+// ======================================================
+// ENDPOINTS
+// ======================================================
+
 app.MapControllers();
+
+
+// Simple health endpoint
+app.MapGet("/", () => Results.Ok(new
+{
+    status = "running",
+    service = "CommunicaAI API"
+}));
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy"
+}));
+
+
+// ======================================================
+// START APPLICATION
+// ======================================================
 
 app.Run();
