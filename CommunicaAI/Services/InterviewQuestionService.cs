@@ -10,6 +10,7 @@ namespace CommunicaAI.Services
         private readonly IInterviewQuestionRepository _questionRepository;
         private readonly IInterviewRepository _interviewRepository;
         private readonly IQuestionBankRepository _questionBankRepository;
+        private static readonly Random _random = new Random();
 
         public InterviewQuestionService(
             IInterviewQuestionRepository questionRepository,
@@ -107,9 +108,9 @@ namespace CommunicaAI.Services
                 return new List<QuestionBank>();
             }
 
-            var random = new Random();
+            // Use Guid-based shuffling for better randomization
             return availableQuestions
-                .OrderBy(_ => random.Next())
+                .OrderBy(_ => Guid.NewGuid())
                 .Take(count)
                 .ToList();
         }

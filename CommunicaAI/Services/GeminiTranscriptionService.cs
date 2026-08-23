@@ -23,89 +23,127 @@ public class GeminiTranscriptionService
         Stream audioStream,
         string contentType)
     {
-        using var ms = new MemoryStream();
-
-        await audioStream.CopyToAsync(ms);
-
-        var audioBytes = ms.ToArray();
-
-        var base64Audio =
-            Convert.ToBase64String(audioBytes);
-
-        var requestBody = new
+        try
         {
-            contents = new[]
+            using var ms = new MemoryStream();
+
+            await audioStream.CopyToAsync(ms);
+
+            var audioBytes = ms.ToArray();
+            
+            Console.WriteLine($"Audio transcription - Size: {audioBytes.Length} bytes, ContentType: {contentType}");
+
+            if (audioBytes.Length == 0)
             {
-                new
+                throw new Exception("Audio file is empty");
+            }
+
+            // Validate content type
+            var validContentTypes = new[] { "audio/webm", "audio/mp4", "audio/wav", "audio/mpeg", "audio/ogg" };
+            if (!validContentTypes.Contains(contentType.ToLower()))
+            {
+                Console.WriteLine($"Warning: Unusual content type: {contentType}. Attempting transcription anyway.");
+            }
+
+            var base64Audio = Convert.ToBase64String(audioBytes);
+
+            var requestBody = new
+            {
+                contents = new[]
                 {
-                    parts = new object[]
+                    new
                     {
-                        new
+                        parts = new object[]
                         {
-                            text =
-                            "Transcribe the following interview answer. Return only the transcript text. Do not add explanations."
-                        },
-                        new
-                        {
-                            inline_data = new
+                            new
                             {
-                                mime_type = contentType,
-                                data = base64Audio
+                                text =
+                                "Transcribe the following interview answer. Return only the transcript text. Do not add explanations."
+                            },
+                            new
+                            {
+                                inline_data = new
+                                {
+                                    mime_type = contentType,
+                                    data = base64Audio
+                                }
                             }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        var url =
-            $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+            var url =
+                $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
 
-        // Retry logic for rate limiting (429 errors)
-        int maxRetries = 3;
-        int retryDelayMs = 2000; // Start with 2 seconds
+            // Retry logic for rate limiting (429 errors)
+            int maxRetries = 3;
+            int retryDelayMs = 2000; // Start with 2 seconds
 
-        for (int attempt = 0; attempt <= maxRetries; attempt++)
-        {
-            try
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
-                var response =
-                    await _httpClient.PostAsJsonAsync(
-                        url,
-                        requestBody);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                try
                 {
-                    // Rate limited - wait and retry with exponential backoff
-                    await Task.Delay(retryDelayMs);
-                    retryDelayMs *= 2; // Double the delay for next attempt
-                    continue;
+                    Console.WriteLine($"Transcription attempt {attempt + 1}/{maxRetries + 1}");
+                    
+                    var response =
+                        await _httpClient.PostAsJsonAsync(
+                            url,
+                            requestBody);
+
+                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                    {
+                        Console.WriteLine($"Rate limited. Retrying in {retryDelayMs}ms");
+                        await Task.Delay(retryDelayMs);
+                        retryDelayMs *= 2; // Double the delay for next attempt
+                        continue;
+                    }
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"Gemini API error: {response.StatusCode}");
+                        Console.WriteLine($"Response: {responseContent}");
+                        throw new Exception($"Gemini API returned {response.StatusCode}: {responseContent}");
+                    }
+
+                    using var doc = JsonDocument.Parse(responseContent);
+                    
+                    var transcript = doc.RootElement
+                        .GetProperty("candidates")[0]
+                        .GetProperty("content")
+                        .GetProperty("parts")[0]
+                        .GetProperty("text")
+                        .GetString()!
+                        .Trim();
+                    
+                    Console.WriteLine($"Transcription successful: {transcript.Substring(0, Math.Min(50, transcript.Length))}...");
+                    
+                    return transcript;
                 }
-
-                response.EnsureSuccessStatusCode();
-
-                var json =
-                    await response.Content.ReadAsStringAsync();
-
-                using var doc =
-                    JsonDocument.Parse(json);
-
-                return doc.RootElement
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString()!
-                    .Trim();
+                catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                {
+                    Console.WriteLine($"Rate limited (HTTP exception). Retrying in {retryDelayMs}ms");
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2;
+                }
+                catch (Exception ex) when (attempt < maxRetries && 
+                    (ex.Message.Contains("429") || ex.Message.Contains("rate limit")))
+                {
+                    Console.WriteLine($"Rate limited (general exception). Retrying in {retryDelayMs}ms");
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2;
+                }
             }
-            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
-            {
-                // Rate limited - wait and retry with exponential backoff
-                await Task.Delay(retryDelayMs);
-                retryDelayMs *= 2;
-            }
+
+            throw new Exception("Failed to transcribe audio after multiple retries. Please check your Gemini API key and quota.");
         }
-
-        throw new Exception("Failed to transcribe audio after multiple retries due to rate limiting. Please try again later.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Transcription failed: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw new Exception($"Audio transcription failed: {ex.Message}", ex);
+        }
     }
 }

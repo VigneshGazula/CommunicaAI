@@ -32,14 +32,37 @@ public class InterviewAnswerController : ControllerBase
 
         var userId = Guid.Parse(userIdClaim);
 
-        var result =
-            await _answerService.SubmitAudioAnswerAsync(
-                sessionId,
-                questionId,
-                audioFile,
-                durationSeconds,
-                userId);
+        try
+        {
+            var result =
+                await _answerService.SubmitAudioAnswerAsync(
+                    sessionId,
+                    questionId,
+                    audioFile,
+                    durationSeconds,
+                    userId);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // Log the error for debugging
+            Console.WriteLine($"Error submitting audio answer: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            
+            return StatusCode(500, new 
+            { 
+                message = "Failed to process audio answer. Please try again.",
+                error = ex.Message 
+            });
+        }
     }
 }
