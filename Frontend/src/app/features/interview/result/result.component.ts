@@ -41,39 +41,6 @@ export class ResultComponent implements OnInit {
     return session?.result?.confidenceScore ?? 0;
   });
 
-  // Video Intelligence Scores (Module 4)
-  readonly eyeContactScore = computed(() => {
-    const session = this.session();
-    return session?.result?.eyeContactScore ?? 0;
-  });
-
-  readonly postureScore = computed(() => {
-    const session = this.session();
-    return session?.result?.postureScore ?? 0;
-  });
-
-  readonly facialExpressionScore = computed(() => {
-    const session = this.session();
-    return session?.result?.facialExpressionScore ?? 0;
-  });
-
-  readonly videoConfidenceScore = computed(() => {
-    const session = this.session();
-    return session?.result?.videoConfidenceScore ?? 0;
-  });
-
-  readonly videoFeedback = computed(() => {
-    const session = this.session();
-    return session?.result?.videoFeedback ?? '';
-  });
-
-  readonly hasVideoMetrics = computed(() => {
-    const session = this.session();
-    return (session?.result?.eyeContactScore ?? 0) > 0 || 
-           (session?.result?.postureScore ?? 0) > 0 ||
-           (session?.result?.facialExpressionScore ?? 0) > 0;
-  });
-
   // AI Interview Coach (Module 5)
   readonly hasCoachingReport = computed(() => {
     const session = this.session();

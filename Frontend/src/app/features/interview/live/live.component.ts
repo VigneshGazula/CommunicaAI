@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, OnInit, PLATFORM_ID, signal, ViewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
@@ -17,6 +17,8 @@ type SpeechState = 'idle' | 'ai-speaking' | 'user-turn' | 'user-recording';
   styleUrl: './live.component.scss'
 })
 export class LiveComponent implements OnInit, OnDestroy {
+  @ViewChild('cameraPreview') cameraPreview?: ElementRef<HTMLVideoElement>;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
@@ -28,7 +30,7 @@ export class LiveComponent implements OnInit, OnDestroy {
   readonly timeRemaining = signal(0);
   readonly loading = signal(false);
   readonly error = signal('');
-  
+
   // Speech & Recording State
   readonly speechState = signal<SpeechState>('idle');
   readonly showCaptions = signal(true);
@@ -206,7 +208,7 @@ export class LiveComponent implements OnInit, OnDestroy {
     try {
       // Release any existing stream first
       this.releaseMediaStream();
-      
+
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -214,7 +216,7 @@ export class LiveComponent implements OnInit, OnDestroy {
           sampleRate: 44100
         } 
       });
-      
+
       // Start analytics tracking with media stream for voice energy analysis
       this.analytics.startRecording(this.mediaStream);
       
@@ -259,7 +261,7 @@ export class LiveComponent implements OnInit, OnDestroy {
     } catch (err: any) {
       console.error('Microphone access error:', err);
       let errorMessage = 'Could not access microphone. ';
-      
+
       if (err.name === 'NotAllowedError') {
         errorMessage += 'Please allow microphone permissions.';
       } else if (err.name === 'NotFoundError') {
@@ -269,7 +271,7 @@ export class LiveComponent implements OnInit, OnDestroy {
       } else {
         errorMessage += 'Please check your settings and try again.';
       }
-      
+
       this.error.set(errorMessage);
       this.speechState.set('user-turn');
       this.analytics.reset();
@@ -280,7 +282,7 @@ export class LiveComponent implements OnInit, OnDestroy {
   stopRecording(): void {
     // Stop analytics tracking
     this.analytics.stopRecording();
-    
+
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try {
         this.mediaRecorder.stop();
@@ -327,22 +329,24 @@ export class LiveComponent implements OnInit, OnDestroy {
       next: (response) => {
         // Show transcript immediately
         this.currentTranscript.set(response.transcript);
-        
+
         // Update session state
         const updatedSession = this.interviewService.getCurrentSession();
         if (updatedSession) {
           this.session.set(updatedSession);
         }
+
+        this.releaseMediaStream();
+        this.audioChunks = [];
       },
       error: (err) => {
         this.currentTranscript.set('');
         this.error.set('Failed to transcribe audio. Please try recording again.');
         console.error('Audio submission error:', err);
+        this.releaseMediaStream();
+        this.audioChunks = [];
       }
     });
-
-    this.releaseMediaStream();
-    this.audioChunks = [];
   }
 
   private releaseMediaStream(): void {
@@ -493,4 +497,5 @@ export class LiveComponent implements OnInit, OnDestroy {
       default: return 'Ready';
     }
   }
+
 }

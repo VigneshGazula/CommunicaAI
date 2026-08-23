@@ -282,7 +282,6 @@ export interface PerformanceAnalyticsResponse {
   technicalScoreTrend: TrendDataPoint[];
   communicationScoreTrend: TrendDataPoint[];
   confidenceScoreTrend: TrendDataPoint[];
-  videoAnalysisTrend: TrendDataPoint[];
   resumeMatchTrend: TrendDataPoint[];
   companyReadinessTrend: TrendDataPoint[];
   strongestSkills: SkillData[];

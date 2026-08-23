@@ -89,20 +89,51 @@ public class AuthController : ControllerBase
     [HttpPost("login/guest")]
     public async Task<ActionResult<AuthResponse>> LoginAsGuest()
     {
-        var guestId = Guid.NewGuid().ToString("N")[..8];
-        var fullName = $"Guest-{guestId}";
-        var email = $"guest-{guestId}@communicaai.app";
-        var tempPassword = Guid.NewGuid().ToString();
+        const int maxAttempts = 3;
 
-        var user = new AppUser
+        AppUser? user = null;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            FullName = fullName,
-            Email = email
-        };
+            var guestId = Guid.NewGuid().ToString("N")[..8];
+            var fullName = $"Guest-{guestId}";
+            var email = $"guest-{guestId}@communicaai.app";
+            var tempPassword = Guid.NewGuid().ToString();
 
-        user.PasswordHash = _passwordHasher.HashPassword(user, tempPassword);
-        _context.Add(user);
-        await _context.SaveChangesAsync();
+            user = new AppUser
+            {
+                FullName = fullName,
+                Email = email
+            };
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, tempPassword);
+            _context.Add(user);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                break;
+            }
+            catch (DbUpdateException)
+            {
+                _context.Entry(user).State = EntityState.Detached;
+                user = null;
+
+                if (attempt == maxAttempts - 1)
+                {
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { message = "Guest login is temporarily unavailable. Please try again." });
+                }
+            }
+        }
+
+        if (user == null)
+        {
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { message = "Guest login is temporarily unavailable. Please try again." });
+        }
 
         var (token, expiresAtUtc) = _tokenService.CreateToken(user);
 

@@ -2,24 +2,25 @@
 # BUILD
 # ==============================
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 
+COPY CommunicaAI.csproj ./
+RUN dotnet restore "CommunicaAI.csproj"
+
 COPY . .
-
-RUN dotnet restore
-
-RUN dotnet publish \
+RUN dotnet publish "CommunicaAI.csproj" \
     -c Release \
-    -o /app/publish
+    -o /app/publish \
+    /p:UseAppHost=false
 
 
 # ==============================
 # RUNTIME
 # ==============================
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
 WORKDIR /app
 

@@ -6,7 +6,6 @@ public class PerformanceAnalyticsResponse
     public List<TrendDataPoint> TechnicalScoreTrend { get; set; } = new();
     public List<TrendDataPoint> CommunicationScoreTrend { get; set; } = new();
     public List<TrendDataPoint> ConfidenceScoreTrend { get; set; } = new();
-    public List<TrendDataPoint> VideoAnalysisTrend { get; set; } = new();
     public List<TrendDataPoint> ResumeMatchTrend { get; set; } = new();
     public List<TrendDataPoint> CompanyReadinessTrend { get; set; } = new();
     public List<SkillData> StrongestSkills { get; set; } = new();

@@ -2,6 +2,7 @@ using CommunicaAI.Data;
 using CommunicaAI.Models;
 using CommunicaAI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CommunicaAI.Repositories
 {
@@ -16,9 +17,38 @@ namespace CommunicaAI.Repositories
 
         public async Task<InterviewAnswer> CreateAsync(InterviewAnswer answer)
         {
-            _context.InterviewAnswers.Add(answer);
-            await _context.SaveChangesAsync();
-            return answer;
+            try
+            {
+                _context.InterviewAnswers.Add(answer);
+                await _context.SaveChangesAsync();
+                return answer;
+            }
+            catch (DbUpdateException ex) when (IsDuplicateInterviewQuestionConstraint(ex))
+            {
+                var existing = await _context.InterviewAnswers
+                    .FirstOrDefaultAsync(a => a.InterviewQuestionId == answer.InterviewQuestionId);
+
+                if (existing == null)
+                {
+                    throw;
+                }
+
+                existing.Transcript = answer.Transcript;
+                existing.AudioUrl = answer.AudioUrl;
+                existing.DurationSeconds = answer.DurationSeconds;
+                existing.AnsweredAt = answer.AnsweredAt;
+                existing.InterviewSessionId = answer.InterviewSessionId;
+
+                await _context.SaveChangesAsync();
+                return existing;
+            }
+        }
+
+        private static bool IsDuplicateInterviewQuestionConstraint(DbUpdateException ex)
+        {
+            return ex.InnerException is PostgresException postgresException &&
+                   postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
+                   postgresException.ConstraintName == "IX_InterviewAnswers_InterviewQuestionId";
         }
 
         public async Task<InterviewAnswer?> GetByQuestionIdAsync(Guid questionId)

@@ -76,16 +76,16 @@ export class InterviewAnalyticsService {
 
   // Computed metrics
   readonly speakingSpeed = computed(() => {
+    if (this.recordingState() !== 'active') return 0;
+
     const duration = this.recordingDuration();
     const words = this.wordCount();
-    
-    // Don't calculate if no words or duration less than 3 seconds
+
     if (words === 0 || duration < 3) return 0;
-    
+
     const minutes = duration / 60;
     const wpm = Math.round(words / minutes);
-    
-    // Cap at reasonable limits (0-300 WPM)
+
     return Math.min(300, Math.max(0, wpm));
   });
 
@@ -448,31 +448,50 @@ export class InterviewAnalyticsService {
   }
 
   private finalizeVoiceIntelligenceMetrics(): void {
-    // Calculate average WPM
+    const transcript = this.currentTranscript().trim();
+    if (!transcript) {
+      this.averageWPM.set(0);
+      this.paceRating.set('Good');
+      this.fillerWordCount.set(0);
+      this.mostUsedFillerWord.set('None');
+      this.fillerWordsMap.set(new Map());
+      this.longestPause.set(0);
+      this.pauseCount.set(0);
+      this.averagePauseDuration.set(0);
+      this.voiceEnergy.set(0);
+      this.averageVolume.set(0);
+      this.volumeSamples.set([]);
+      this.fluencyScore.set(0);
+      this.communicationScore.set(0);
+      this.wpmSamples = [];
+      this.pauseDurations = [];
+      return;
+    }
+
     if (this.wpmSamples.length > 0) {
       const avgWPM = Math.round(
         this.wpmSamples.reduce((a, b) => a + b, 0) / this.wpmSamples.length
       );
       this.averageWPM.set(avgWPM);
       this.paceRating.set(this.calculatePaceRating(avgWPM));
+    } else {
+      this.averageWPM.set(0);
+      this.paceRating.set('Good');
     }
 
-    // Calculate average pause duration
     if (this.pauseDurations.length > 0) {
       const avgPause = this.pauseDurations.reduce((a, b) => a + b, 0) / this.pauseDurations.length;
       this.averagePauseDuration.set(Math.round(avgPause * 10) / 10);
-      
+
       const maxPause = Math.max(...this.pauseDurations);
       this.longestPause.set(Math.round(maxPause * 10) / 10);
+    } else {
+      this.averagePauseDuration.set(0);
+      this.longestPause.set(0);
     }
 
-    // Detect filler words in final transcript
-    this.detectFillerWords(this.currentTranscript());
-
-    // Calculate fluency score
+    this.detectFillerWords(transcript);
     this.calculateFluencyScore();
-
-    // Calculate communication score
     this.calculateCommunicationScore();
   }
 
@@ -517,12 +536,19 @@ export class InterviewAnalyticsService {
   }
 
   private calculateFluencyScore(): void {
+    const words = this.wordCount();
+    const recordingState = this.recordingState();
+
+    if (words === 0 || recordingState !== 'active' && recordingState !== 'stopped') {
+      this.fluencyScore.set(0);
+      return;
+    }
+
     // Fluency score based on multiple factors (0-100)
     let score = 100;
 
     const wpm = this.averageWPM();
     const fillers = this.fillerWordCount();
-    const words = this.wordCount();
     const pauses = this.pauseCount();
     const avgPause = this.averagePauseDuration();
 
@@ -534,15 +560,13 @@ export class InterviewAnalyticsService {
     }
 
     // Penalty for filler words (-30 points max)
-    if (words > 0) {
-      const fillerRatio = fillers / words;
-      if (fillerRatio > 0.15) {
-        score -= 30;
-      } else if (fillerRatio > 0.10) {
-        score -= 20;
-      } else if (fillerRatio > 0.05) {
-        score -= 10;
-      }
+    const fillerRatio = fillers / words;
+    if (fillerRatio > 0.15) {
+      score -= 30;
+    } else if (fillerRatio > 0.10) {
+      score -= 20;
+    } else if (fillerRatio > 0.05) {
+      score -= 10;
     }
 
     // Penalty for excessive pauses (-20 points max)
@@ -567,13 +591,21 @@ export class InterviewAnalyticsService {
   }
 
   private calculateCommunicationScore(): void {
+    const words = this.wordCount();
+    const recordingState = this.recordingState();
+
+    if (words === 0 || recordingState !== 'active' && recordingState !== 'stopped') {
+      this.communicationScore.set(0);
+      return;
+    }
+
     // Communication score based on fluency, energy, and consistency (0-100)
     const fluency = this.fluencyScore();
     const energy = this.voiceEnergy();
-    
+
     // Weight: 60% fluency, 40% energy
     const score = Math.round(fluency * 0.6 + energy * 0.4);
-    
+
     this.communicationScore.set(Math.max(0, Math.min(100, score)));
   }
 

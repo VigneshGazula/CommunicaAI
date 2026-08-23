@@ -16,10 +16,14 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // ======================================================
-// RENDER PORT CONFIGURATION
+// LOCAL DEV / DEPLOYMENT PORT CONFIGURATION
 // ======================================================
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+var configuredPort = Environment.GetEnvironmentVariable("PORT");
+
+var port = string.IsNullOrWhiteSpace(configuredPort)
+    ? (builder.Environment.IsDevelopment() ? "5169" : "10000")
+    : configuredPort;
 
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -67,6 +71,24 @@ static string? ResolveConnectionString(IConfiguration configuration)
     }
 
     return configuration.GetConnectionString("DefaultConnection");
+}
+
+static string[]? ResolveCorsOrigins(IConfiguration configuration)
+{
+    var configuredOrigins =
+        Environment.GetEnvironmentVariable("FRONTEND_ORIGINS") ??
+        Environment.GetEnvironmentVariable("CORS_ORIGINS") ??
+        configuration["Cors:AllowedOrigins"];
+
+    if (string.IsNullOrWhiteSpace(configuredOrigins))
+    {
+        return null;
+    }
+
+    return configuredOrigins.Split(
+        [',', ';', '|'],
+        StringSplitOptions.RemoveEmptyEntries |
+        StringSplitOptions.TrimEntries);
 }
 
 var connectionString =
@@ -250,13 +272,6 @@ builder.Services.AddScoped<
 
 
 // ======================================================
-// VIDEO ANALYSIS MODULE
-// ======================================================
-
-builder.Services.AddScoped<VideoAnalysisService>();
-
-
-// ======================================================
 // ANALYTICS MODULE
 // ======================================================
 
@@ -271,8 +286,20 @@ builder.Services.AddScoped<
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
+        var allowedOrigins = ResolveCorsOrigins(builder.Configuration);
+
+        if (allowedOrigins is { Length: > 0 })
+        {
+            policy
+                .WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+
+            return;
+        }
+
         policy
             .AllowAnyOrigin()
             .AllowAnyHeader()
@@ -351,10 +378,17 @@ var app = builder.Build();
 // SWAGGER
 // ======================================================
 
-// Enable Swagger on Render as well so API can be tested
-app.UseSwagger();
+var enableSwagger = builder.Environment.IsDevelopment() ||
+    string.Equals(
+        Environment.GetEnvironmentVariable("ENABLE_SWAGGER"),
+        "true",
+        StringComparison.OrdinalIgnoreCase);
 
-app.UseSwaggerUI();
+if (enableSwagger)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ======================================================
@@ -369,7 +403,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseCors("AllowAngular");
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 

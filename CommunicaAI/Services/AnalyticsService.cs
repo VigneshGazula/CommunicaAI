@@ -58,7 +58,6 @@ public class AnalyticsService : IAnalyticsService
             TechnicalScoreTrend = CalculateTrend(completedSessions, allResults, r => r.TechnicalScore),
             CommunicationScoreTrend = CalculateTrend(completedSessions, allResults, r => r.CommunicationScore),
             ConfidenceScoreTrend = CalculateTrend(completedSessions, allResults, r => r.ConfidenceScore),
-            VideoAnalysisTrend = CalculateVideoTrend(completedSessions, allResults),
             ResumeMatchTrend = CalculateTrend(completedSessions, allResults, r => r.ResumeMatchScore, true),
             CompanyReadinessTrend = CalculateTrend(completedSessions, allResults, r => r.CompanyReadinessScore, true),
             StrongestSkills = await CalculateStrongestSkillsAsync(sessionIds),
@@ -120,38 +119,6 @@ public class AnalyticsService : IAnalyticsService
             {
                 Date = session.CompletedAt!.Value,
                 Score = score,
-                Role = session.Role,
-                Difficulty = session.Difficulty
-            });
-        }
-
-        return trend.OrderBy(t => t.Date).ToList();
-    }
-
-    private List<TrendDataPoint> CalculateVideoTrend(
-        List<Models.InterviewSession> sessions,
-        List<Models.InterviewResult> results)
-    {
-        var trend = new List<TrendDataPoint>();
-
-        foreach (var session in sessions)
-        {
-            var result = results.FirstOrDefault(r => r.InterviewSessionId == session.Id);
-            if (result == null) continue;
-
-            // Calculate average video score from all video metrics
-            var videoScores = new List<int>();
-            if (result.EyeContactScore > 0) videoScores.Add(result.EyeContactScore);
-            if (result.PostureScore > 0) videoScores.Add(result.PostureScore);
-            if (result.FacialExpressionScore > 0) videoScores.Add(result.FacialExpressionScore);
-            if (result.VideoConfidenceScore > 0) videoScores.Add(result.VideoConfidenceScore);
-
-            if (!videoScores.Any()) continue;
-
-            trend.Add(new TrendDataPoint
-            {
-                Date = session.CompletedAt!.Value,
-                Score = (int)videoScores.Average(),
                 Role = session.Role,
                 Difficulty = session.Difficulty
             });
