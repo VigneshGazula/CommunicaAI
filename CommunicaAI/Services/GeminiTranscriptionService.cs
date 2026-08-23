@@ -58,7 +58,7 @@ public class GeminiTranscriptionService
                             new
                             {
                                 text =
-                                "Transcribe the following interview answer. Return only the transcript text. Do not add explanations."
+                                "Listen to the audio and provide ONLY the exact words spoken. Do not add any commentary, analysis, or additional text. Just transcribe what you hear word-for-word."
                             },
                             new
                             {
@@ -77,8 +77,8 @@ public class GeminiTranscriptionService
                 $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
 
             // Retry logic for rate limiting (429 errors)
-            int maxRetries = 3;
-            int retryDelayMs = 2000; // Start with 2 seconds
+            int maxRetries = 5;
+            int retryDelayMs = 3000; // Start with 3 seconds (longer initial delay)
 
             for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
@@ -91,12 +91,22 @@ public class GeminiTranscriptionService
                             url,
                             requestBody);
 
-                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
-                        Console.WriteLine($"Rate limited. Retrying in {retryDelayMs}ms");
-                        await Task.Delay(retryDelayMs);
-                        retryDelayMs *= 2; // Double the delay for next attempt
-                        continue;
+                        if (attempt < maxRetries)
+                        {
+                            // Calculate exponential backoff with jitter
+                            var jitter = Random.Shared.Next(0, 1000);
+                            var totalDelay = retryDelayMs + jitter;
+                            Console.WriteLine($"Rate limited (429). Retrying in {totalDelay}ms (attempt {attempt + 1}/{maxRetries})");
+                            await Task.Delay(totalDelay);
+                            retryDelayMs *= 2; // Double the delay for next attempt
+                            continue;
+                        }
+                        else
+                        {
+                            throw new Exception("Gemini API rate limit exceeded. Please wait a moment and try again, or upgrade your API quota at https://aistudio.google.com/");
+                        }
                     }
 
                     var responseContent = await response.Content.ReadAsStringAsync();
@@ -124,15 +134,19 @@ public class GeminiTranscriptionService
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
                 {
-                    Console.WriteLine($"Rate limited (HTTP exception). Retrying in {retryDelayMs}ms");
-                    await Task.Delay(retryDelayMs);
+                    var jitter = Random.Shared.Next(0, 1000);
+                    var totalDelay = retryDelayMs + jitter;
+                    Console.WriteLine($"Rate limited (HTTP exception). Retrying in {totalDelay}ms");
+                    await Task.Delay(totalDelay);
                     retryDelayMs *= 2;
                 }
                 catch (Exception ex) when (attempt < maxRetries && 
-                    (ex.Message.Contains("429") || ex.Message.Contains("rate limit")))
+                    (ex.Message.Contains("429") || ex.Message.Contains("rate limit") || ex.Message.Contains("Too Many Requests")))
                 {
-                    Console.WriteLine($"Rate limited (general exception). Retrying in {retryDelayMs}ms");
-                    await Task.Delay(retryDelayMs);
+                    var jitter = Random.Shared.Next(0, 1000);
+                    var totalDelay = retryDelayMs + jitter;
+                    Console.WriteLine($"Rate limited (general exception). Retrying in {totalDelay}ms");
+                    await Task.Delay(totalDelay);
                     retryDelayMs *= 2;
                 }
             }

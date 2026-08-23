@@ -55,12 +55,16 @@ namespace CommunicaAI.Services
                 ? Math.Round((double)answeredQuestions / totalQuestions * 100, 2) 
                 : 0;
 
-            // Batch evaluate all answers
+            // Batch evaluate all answers with rate limit protection
             var answers = await _answerRepository.GetBySessionIdAsync(sessionId);
             var evaluations = new List<AnswerEvaluation>();
 
+            int answerIndex = 0;
             foreach (var answer in answers)
             {
+                answerIndex++;
+                Console.WriteLine($"Processing answer {answerIndex}/{answers.Count}");
+                
                 // Check if already evaluated
                 var existing = await _evaluationRepository.GetByAnswerIdAsync(answer.Id);
                 if (existing != null)
@@ -74,6 +78,13 @@ namespace CommunicaAI.Services
                 if (question == null || string.IsNullOrWhiteSpace(answer.Transcript))
                 {
                     continue;
+                }
+
+                // Add delay between evaluations to avoid rate limiting (1.5 seconds)
+                if (answerIndex > 1)
+                {
+                    Console.WriteLine("Waiting 1.5s before next evaluation to avoid rate limits...");
+                    await Task.Delay(1500);
                 }
 
                 // Evaluate answer with interview type context (Module 9)

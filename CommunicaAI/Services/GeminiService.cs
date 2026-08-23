@@ -281,37 +281,62 @@ Adjust scoring weights based on interview type priorities.";
         var url =
             $"https://generativelanguage.googleapis.com/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
 
-        int maxRetries = 3;
-        int retryDelayMs = 2000;
+        int maxRetries = 5;
+        int retryDelayMs = 3000; // Start with 3 seconds
         string json = string.Empty;
 
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
             try
             {
+                Console.WriteLine($"Evaluation attempt {attempt + 1}/{maxRetries + 1}");
+                
                 var response = await _httpClient.PostAsJsonAsync(url, request);
 
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    await Task.Delay(retryDelayMs);
-                    retryDelayMs *= 2;
-                    continue;
+                    if (attempt < maxRetries)
+                    {
+                        var jitter = Random.Shared.Next(0, 1000);
+                        var totalDelay = retryDelayMs + jitter;
+                        Console.WriteLine($"Evaluation rate limited (429). Retrying in {totalDelay}ms (attempt {attempt + 1}/{maxRetries})");
+                        await Task.Delay(totalDelay);
+                        retryDelayMs *= 2;
+                        continue;
+                    }
+                    else
+                    {
+                        throw new Exception("Gemini API rate limit exceeded during evaluation. Please wait and try again.");
+                    }
                 }
 
                 response.EnsureSuccessStatusCode();
                 json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Evaluation successful for question");
                 break;
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxRetries)
             {
-                await Task.Delay(retryDelayMs);
+                var jitter = Random.Shared.Next(0, 1000);
+                var totalDelay = retryDelayMs + jitter;
+                Console.WriteLine($"Evaluation rate limited (HTTP exception). Retrying in {totalDelay}ms");
+                await Task.Delay(totalDelay);
+                retryDelayMs *= 2;
+            }
+            catch (Exception ex) when (attempt < maxRetries && 
+                (ex.Message.Contains("429") || ex.Message.Contains("rate limit") || ex.Message.Contains("Too Many Requests")))
+            {
+                var jitter = Random.Shared.Next(0, 1000);
+                var totalDelay = retryDelayMs + jitter;
+                Console.WriteLine($"Evaluation rate limited (general exception). Retrying in {totalDelay}ms");
+                await Task.Delay(totalDelay);
                 retryDelayMs *= 2;
             }
         }
 
         if (string.IsNullOrEmpty(json))
         {
-            throw new Exception("Failed to evaluate answer after multiple retries.");
+            throw new Exception("Failed to evaluate answer after multiple retries due to rate limiting.");
         }
 
         using var document = JsonDocument.Parse(json);
